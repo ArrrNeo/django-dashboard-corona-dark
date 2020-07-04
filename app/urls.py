@@ -15,4 +15,6 @@ urlpatterns = [
 
     # The home page
     path('', views.index, name='home'),
+
+    path('summary/', views.summary, name='summary'),
 ]
