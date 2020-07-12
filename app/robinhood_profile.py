@@ -198,7 +198,7 @@ class Robinhood():
         return buying_power
 
     def get_my_portfolio_cash():
-        portfolio_cash = profiles.load_account_profile()['portfolio_cash']
+        portfolio_cash = float(profiles.load_account_profile()['portfolio_cash'])
         # write to summary database
         if not robinhood_summary.objects.all():
             obj = robinhood_summary()

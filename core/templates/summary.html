@@ -74,11 +74,11 @@
           <div class="row">
             <div class="col-9">
               <div class="d-flex align-items-center align-self-start">
-                <h4 class="mb-0">$ {{buying_power | floatformat:2}}</h4>
+                <h4 class="mb-0">$ {{portfolio_value | floatformat:2}}</h4>
               </div>
             </div>
           </div>
-          <h6 class="text-muted font-weight-normal">Buying power</h6>
+          <h6 class="text-muted font-weight-normal">Portfolio Value</h6>
         </div>
       </div>
     </div>
@@ -86,8 +86,9 @@
   <div class="row">
     <div class="col-lg-6 grid-margin stretch-card">
       <div class="card">
-        <div id="container" style="width: 75%;">
-          <canvas id="pie-chart"></canvas>
+        <div class="card-body">
+          <h4 class="card-title">Pie chart</h4>
+          <canvas id="pie-chart" style="height:250px"></canvas>
         </div>
       </div>
     </div>
@@ -95,7 +96,7 @@
       <div class="card">
         <div class="card-body">
           <h4 class="card-title">Bar chart</h4>
-          <canvas id="barChart" style="height:100px"></canvas>
+          <canvas id="barChart" style="height:250px"></canvas>
         </div>
       </div>
     </div>
@@ -106,7 +107,7 @@
 
 {% block plugin_javascripts %}
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+<script src="/static/assets/vendors/chart.js/Chart.min.js"></script>
 
 {% endblock plugin_javascripts %}
 
@@ -120,7 +121,7 @@
     {
       datasets: [{
                   data: {{ data_1 | safe }},
-                  backgroundColor: ['#596169', '#F07080', '#F9A909', '#00D0C0', '#D303D3'],
+                  backgroundColor: ['#111166', '#F9A909', '#F11080'],
                   label: 'Population'
                 }],
       labels: {{ labels_1 | safe }}

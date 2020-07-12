@@ -45,12 +45,12 @@ def summary(request):
     password = open(current_dir + '/password.txt', 'r').read()
 
     Robinhood.login(user=username, passwd=password)
-    stocks_equity  = Robinhood.get_my_stock_positions()
-    options_equity = Robinhood.get_my_options_positions()
-    crypto_equity  = Robinhood.get_my_crypto_positions()
-    total_equity   = stocks_equity + options_equity + crypto_equity
-    portfolio_cash = Robinhood.get_my_portfolio_cash()
-    buying_power   = Robinhood.get_my_buying_power()
+    stocks_equity   = Robinhood.get_my_stock_positions()
+    options_equity  = Robinhood.get_my_options_positions()
+    crypto_equity   = Robinhood.get_my_crypto_positions()
+    total_equity    = stocks_equity + options_equity + crypto_equity
+    portfolio_cash  = Robinhood.get_my_portfolio_cash()
+    portfolio_value = total_equity + portfolio_cash
 
     labels.append('stocks_equity')
     labels.append('options_equity')
@@ -74,7 +74,7 @@ def summary(request):
                             'crypto_change'        : 15.67,
                             'crypto_total_change'  : 45.67,
                             'margin_or_cash'       : portfolio_cash,
-                            'buying_power'         : buying_power,
+                            'portfolio_value'      : portfolio_value,
                         }
 
     return render(request, 'summary.html', data_for_template)
