@@ -78,3 +78,8 @@ def summary(request):
                         }
 
     return render(request, 'summary.html', data_for_template)
+
+def options(request):
+    table = OptionsTable(robinhood_options.objects.all(), exclude=['option_id', 'percent_to_breakeven', 'timestamp'])
+    return render(request, 'options.html', { 'table': table })
+
