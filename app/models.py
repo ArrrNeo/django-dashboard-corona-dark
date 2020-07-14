@@ -29,6 +29,8 @@ class robinhood_stocks(models.Model):
     cost_basis             = models.FloatField()
     unrealized_p_l         = models.FloatField()
     unrealized_p_l_percent = models.FloatField()
+    today_p_l              = models.FloatField()
+    today_p_l_percent      = models.FloatField()
 
 class robinhood_options(models.Model):
     timestamp              = models.DateTimeField(auto_now_add=True)
@@ -38,17 +40,15 @@ class robinhood_options(models.Model):
     option_type            = models.CharField(max_length=5)
     strike_price           = models.FloatField()
     average_price          = models.FloatField()
-    breakeven_price        = models.FloatField()
-    percent_to_breakeven   = models.FloatField()
     quantity               = models.FloatField()
-    ask_price              = models.FloatField()
-    bid_price              = models.FloatField()
-    open_price             = models.FloatField()
+    previous_close_price   = models.FloatField()
     current_price          = models.FloatField()
     equity                 = models.FloatField()
     cost_basis             = models.FloatField()
     unrealized_p_l         = models.FloatField()
     unrealized_p_l_percent = models.FloatField()
+    today_p_l              = models.FloatField()
+    today_p_l_percent      = models.FloatField()
 
 class robinhood_crypto(models.Model):
     timestamp              = models.DateTimeField(auto_now_add=True)

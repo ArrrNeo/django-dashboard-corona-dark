@@ -5,14 +5,16 @@ Copyright (c) 2019 - present AppSeed.us
 """
 
 import os
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404, redirect
-from django.template import loader
-from django.http import HttpResponse
 from django import template
 from django.db.models import Sum
+from django.template import loader
+from django.http import HttpResponse
 from django.http import JsonResponse
+from app.models import robinhood_options
 from app.robinhood_profile import Robinhood
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404, redirect
+import django_tables2 as tables
 
 @login_required(login_url="/login/")
 def index(request):
@@ -45,8 +47,8 @@ def summary(request):
     password = open(current_dir + '/password.txt', 'r').read()
 
     Robinhood.login(user=username, passwd=password)
-    stocks_equity   = Robinhood.get_my_stock_positions()
-    options_equity  = Robinhood.get_my_options_positions()
+    stocks_equity, stocks_upl_today, stocks_upl_total    = Robinhood.get_my_stock_positions()
+    options_equity, options_upl_today, options_upl_total = Robinhood.get_my_options_positions()
     crypto_equity   = Robinhood.get_my_crypto_positions()
     total_equity    = stocks_equity + options_equity + crypto_equity
     portfolio_cash  = Robinhood.get_my_portfolio_cash()
@@ -65,11 +67,11 @@ def summary(request):
                             'labels_2'             : labels,
                             'data_2'               : data,
                             'options_equity'       : options_equity,
-                            'options_change'       : 15.67,
-                            'options_total_change' : -15.67,
+                            'options_change'       : options_upl_today,
+                            'options_total_change' : options_upl_total,
                             'stocks_equity'        : stocks_equity,
-                            'stocks_change'        : 5.67,
-                            'stocks_total_change'  : 4.67,
+                            'stocks_change'        : stocks_upl_today,
+                            'stocks_total_change'  : stocks_upl_total,
                             'crypto_equity'        : crypto_equity,
                             'crypto_change'        : 15.67,
                             'crypto_total_change'  : 45.67,
@@ -78,6 +80,10 @@ def summary(request):
                         }
 
     return render(request, 'summary.html', data_for_template)
+
+class OptionsTable(tables.Table):
+    class Meta:
+        model = robinhood_options
 
 def options(request):
     table = OptionsTable(robinhood_options.objects.all(), exclude=['option_id', 'percent_to_breakeven', 'timestamp'])
