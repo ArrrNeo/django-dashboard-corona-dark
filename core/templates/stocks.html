@@ -7,7 +7,7 @@
 {% block stylesheets %}{% endblock stylesheets %}
 {% block content %}
 
-<form action="/options/" method="POST">
+<form action="/stocks/" method="POST">
   <!-- <label for="your_name">Your name: </label>
   <input id="your_name" type="text" name="your_name" value="{{ current_name }}"> -->
   {% csrf_token %}
@@ -22,15 +22,12 @@
                 <thead>
                   <tr>
                     <th> symbol </th>
-                    <th> type </th>
-                    <th> strike </th>
-                    <th> exp </th>
-                    <th> avg </th>
-                    <th> number </th>
-                    <th> previous_close </th>
-                    <th> current_price </th>
+                    <th> quantity </th>
+                    <th> average_price </th>
                     <th> equity </th>
                     <th> cost_basis </th>
+                    <th> open_price </th>
+                    <th> latest_price </th>
                     <!-- <th> unrealized_pl </th> -->
                     <!-- <th> unrealized_pl % </th> -->
                     <!-- <th> today_pl </th> -->
@@ -41,21 +38,18 @@
                 <tbody>
                   {% for row in table %}
                     <tr>
-                      <td> {{ row.chain_symbol }} </td>
-                      <td> {{ row.option_type }} </td>
-                      <td> {{ row.strike_price }} </td>
-                      <td> {{ row.expiration_date }} </td>
+                      <td> {{ row.symbol }} </td>
+                      <td> {{ row.quantity | floatformat:2 }} </td>
                       <td> {{ row.average_price | floatformat:2 }} </td>
-                      <td> {{ row.quantity }} </td>
-                      <td> {{ row.previous_close_price | floatformat:2 }} </td>
-                      <td> {{ row.current_price | floatformat:2 }} </td>
                       <td> {{ row.equity | floatformat:2 }} </td>
                       <td> {{ row.cost_basis | floatformat:2 }} </td>
+                      <td> {{ row.open_price | floatformat:2 }} </td>
+                      <td> {{ row.latest_price | floatformat:2 }} </td>
                       <!-- <td> {{ row.unrealized_p_l | floatformat:2 }} </td> -->
                       <!-- <td> {{ row.unrealized_p_l_percent | floatformat:2 }} </td> -->
                       <!-- <td> {{ row.today_p_l | floatformat:2 }} </td> -->
                       <!-- <td> {{ row.today_p_l_percent | floatformat:2 }} </td> -->
-                      <td> <input type="checkbox" name="long_term" value={{ row.option_id }} {% if row.long_term %} checked {% endif %} /> </td>
+                      <td> <input type="checkbox" name="long_term" value={{ row.instrument_url }} {% if row.long_term %} checked {% endif %} /> </td>
                     </tr>
                   {% endfor %}
                 </tbody>

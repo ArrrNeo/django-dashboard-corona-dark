@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import pprint
+# import pprint
 import robin_stocks as r
 import robin_stocks.profiles as profiles
 from django.utils import timezone
@@ -101,7 +101,7 @@ market_data for options
 }
 """
 
-pp = pprint.PrettyPrinter(indent=4)
+# pp = pprint.PrettyPrinter(indent=4)
 
 class Robinhood():
     def login(user, passwd):
@@ -115,7 +115,7 @@ class Robinhood():
         positions_data = r.get_open_stock_positions()
 
         for item in positions_data:
-            pp.pprint(item)
+            # pp.pprint(item)
             instrument_url = item['instrument']
             # check if stock is already in database
             if not robinhood_stocks.objects.filter(instrument_url=instrument_url):

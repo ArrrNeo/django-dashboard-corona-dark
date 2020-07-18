@@ -31,6 +31,7 @@ class robinhood_stocks(models.Model):
     unrealized_p_l_percent = models.FloatField()
     today_p_l              = models.FloatField()
     today_p_l_percent      = models.FloatField()
+    long_term              = models.BooleanField(default=False)
 
 class robinhood_options(models.Model):
     timestamp              = models.DateTimeField(auto_now_add=True)
@@ -49,6 +50,7 @@ class robinhood_options(models.Model):
     unrealized_p_l_percent = models.FloatField()
     today_p_l              = models.FloatField()
     today_p_l_percent      = models.FloatField()
+    long_term              = models.BooleanField(default=False)
 
 class robinhood_crypto(models.Model):
     timestamp              = models.DateTimeField(auto_now_add=True)

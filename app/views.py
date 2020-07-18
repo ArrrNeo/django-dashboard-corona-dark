@@ -10,17 +10,15 @@ from django.db.models import Sum
 from django.template import loader
 from django.http import HttpResponse
 from django.http import JsonResponse
-from app.models import robinhood_options
+from app.models import robinhood_options, robinhood_stocks
 from app.robinhood_profile import Robinhood
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
-import django_tables2 as tables
 
 @login_required(login_url="/login/")
 def index(request):
     return render(request, "index.html")
 
-@login_required(login_url="/login/")
 def pages(request):
     context = {}
     # All resource paths end in .html.
@@ -81,11 +79,34 @@ def summary(request):
 
     return render(request, 'summary.html', data_for_template)
 
-class OptionsTable(tables.Table):
-    class Meta:
-        model = robinhood_options
-
 def options(request):
-    table = OptionsTable(robinhood_options.objects.all(), exclude=['option_id', 'percent_to_breakeven', 'timestamp'])
-    return render(request, 'options.html', { 'table': table })
+    qset = robinhood_options.objects.all()
+    if request.method == 'POST':
+        long_term_list = request.POST.getlist('long_term')
+        for item in qset:
+            if item.option_id in long_term_list:
+                print (item.chain_symbol)
+                item.long_term = True
+            else:
+                item.long_term = False
+            item.save()
 
+    ctx = {}
+    ctx['table'] = list(qset)
+    return render(request, 'options.html', ctx)
+
+def stocks(request):
+    qset = robinhood_stocks.objects.all()
+    if request.method == 'POST':
+        long_term_list = request.POST.getlist('long_term')
+        for item in qset:
+            if item.instrument_url in long_term_list:
+                print (item.symbol)
+                item.long_term = True
+            else:
+                item.long_term = False
+            item.save()
+
+    ctx = {}
+    ctx['table'] = list(qset)
+    return render(request, 'stocks.html', ctx)
