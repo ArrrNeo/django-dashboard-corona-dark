@@ -19,8 +19,6 @@ class robinhood_summary(models.Model):
 class robinhood_stocks(models.Model):
     timestamp              = models.DateTimeField(auto_now_add=True)
     symbol                 = models.CharField(max_length=5)
-    name                   = models.CharField(max_length=30)
-    instrument_url         = models.CharField(max_length=92)
     average_price          = models.FloatField()
     quantity               = models.FloatField()
     open_price             = models.FloatField()
@@ -63,3 +61,8 @@ class robinhood_crypto(models.Model):
     cost_basis             = models.FloatField()
     unrealized_p_l         = models.FloatField()
     unrealized_p_l_percent = models.FloatField()
+
+class robinhood_instrument_symbol_lookup(models.Model):
+    symbol                 = models.CharField(max_length=5)
+    name                   = models.CharField(max_length=30)
+    instrument_url         = models.CharField(max_length=92)

@@ -4,7 +4,7 @@
 import robin_stocks as r
 import robin_stocks.profiles as profiles
 from django.utils import timezone
-from app.models import robinhood_stocks, robinhood_summary, robinhood_options, robinhood_crypto
+from app.models import robinhood_stocks, robinhood_summary, robinhood_options, robinhood_crypto, robinhood_instrument_symbol_lookup
 
 """
 stock fundmentals
@@ -115,20 +115,31 @@ class Robinhood():
         positions_data = r.get_open_stock_positions()
 
         for item in positions_data:
-            # pp.pprint(item)
             instrument_url = item['instrument']
-            # check if stock is already in database
-            if not robinhood_stocks.objects.filter(instrument_url=instrument_url):
-                # create and update: fixed info
+            # check if instrument is present in robinhood_instrument_symbol_lookup table
+            obj = robinhood_instrument_symbol_lookup.objects.filter(instrument_url=instrument_url)
+            if not obj:
+                obj                 = robinhood_instrument_symbol_lookup()
                 symbol              = r.get_instrument_by_url(instrument_url)['symbol']
                 name                = r.get_name_by_symbol(symbol)
-                obj                 = robinhood_stocks()
+                obj.symbol          = symbol
+                obj.name            = name
                 obj.instrument_url  = instrument_url
+                obj.save()
+            else:
+                obj = obj[0]
+                symbol              = obj.symbol
+                name                = obj.name
+
+            # check if stock is already in database
+            obj = robinhood_stocks.objects.filter(symbol=symbol)
+            if not obj:
+                # create and update: fixed info
+                obj                 = robinhood_stocks()
                 obj.symbol          = symbol
                 obj.name            = name
             else:
-                obj                 = robinhood_stocks.objects.get(instrument_url=instrument_url)
-                symbol              = obj.symbol
+                obj = obj[0]
                 refresh_time        = obj.timestamp + timezone.timedelta(minutes=15)
                 # check if update is needed
                 if timezone.now() < refresh_time:
@@ -157,7 +168,6 @@ class Robinhood():
             obj.average_price           = average_price
             obj.quantity                = quantity
             # TODO: get correct open_price
-            obj.open_price              = latest_price
             obj.latest_price            = latest_price
             obj.equity                  = equity
             obj.cost_basis              = cost_basis
