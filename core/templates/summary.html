@@ -10,138 +10,142 @@
 
 {% block content %}
 
-<div class="content-wrapper">
-  <div class="row">
-    <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-      <div class="card">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-9">
-              <div class="d-flex align-items-center align-self-start">
-                <div class="col-sm-9">
-                  <h4 class="mb-0">$ {{options_equity | floatformat:2}}</h4>
-                </div>
-                <div class="col-sm-9">
-                  <div class="row">
-                    <tt class="ml-2 mb-0 font-weight-small">today: </tt>
-                    {% if options_change < 0 %}
-                      <p class="text-danger ml-2 mb-0 font-weight-medium">$ {{options_change | floatformat:2}}</p>
-                    {% else %}
-                      <p class="text-success ml-2 mb-0 font-weight-medium">$ {{options_change | floatformat:2}}</p>
-                    {% endif %}
+<form action="/summary/" method="POST">
+  {% csrf_token %}
+  <div class="content-wrapper">
+    <div class="row">
+      <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+          <div class="card-body">
+            <div class="row">
+              <div class="col-9">
+                <div class="d-flex align-items-center align-self-start">
+                  <div class="col-sm-9">
+                    <h4 class="mb-0">$ {{options_equity | floatformat:2}}</h4>
                   </div>
-                  <div class="row">
-                    <tt class="ml-2 mb-0 font-weight-small">total: </tt>
-                    {% if options_total_change < 0 %}
-                      <p class="text-danger ml-2 mb-0 font-weight-medium">$ {{options_total_change | floatformat:2}}</p>
-                    {% else %}
-                      <p class="text-success ml-2 mb-0 font-weight-medium">$ {{options_total_change | floatformat:2}}</p>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <h6 class="text-muted font-weight-normal">Options</h6>
-        </div>
-      </div>
-    </div>
-    <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-      <div class="card">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-9">
-              <div class="d-flex align-items-center align-self-start">
-                <div class="col-sm-9">
-                  <h4 class="mb-0">$ {{stocks_equity | floatformat:2}}</h4>
-                </div>
-                <div class="col-sm-9">
-                  <div class="row">
-                    <tt class="ml-2 mb-0 font-weight-small">today: </tt>
-                    {% if stocks_change < 0 %}
-                      <p class="text-danger ml-2 mb-0 font-weight-medium">$ {{stocks_change | floatformat:2}}</p>
-                    {% else %}
-                      <p class="text-success ml-2 mb-0 font-weight-medium">$ {{stocks_change | floatformat:2}}</p>
-                    {% endif %}
-                  </div>
-                  <div class="row">
-                    <tt class="ml-2 mb-0 font-weight-small">total: </tt>
-                    {% if stocks_total_change < 0 %}
-                      <p class="text-danger ml-2 mb-0 font-weight-medium">$ {{stocks_total_change | floatformat:2}}</p>
-                    {% else %}
-                      <p class="text-success ml-2 mb-0 font-weight-medium">$ {{stocks_total_change | floatformat:2}}</p>
-                    {% endif %}
+                  <div class="col-sm-9">
+                    <div class="row">
+                      <tt class="ml-2 mb-0 font-weight-small">today: </tt>
+                      {% if options_change < 0 %}
+                        <p class="text-danger ml-2 mb-0 font-weight-medium">$ {{options_change | floatformat:2}}</p>
+                      {% else %}
+                        <p class="text-success ml-2 mb-0 font-weight-medium">$ {{options_change | floatformat:2}}</p>
+                      {% endif %}
+                    </div>
+                    <div class="row">
+                      <tt class="ml-2 mb-0 font-weight-small">total: </tt>
+                      {% if options_total_change < 0 %}
+                        <p class="text-danger ml-2 mb-0 font-weight-medium">$ {{options_total_change | floatformat:2}}</p>
+                      {% else %}
+                        <p class="text-success ml-2 mb-0 font-weight-medium">$ {{options_total_change | floatformat:2}}</p>
+                      {% endif %}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+            <h6 class="text-muted font-weight-normal">Options</h6>
           </div>
-          <h6 class="text-muted font-weight-normal">Stocks</h6>
         </div>
       </div>
-    </div>
-    <div class="col-xl-2 col-sm-6 grid-margin stretch-card">
-      <div class="card">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-9">
-              <div class="d-flex align-items-center align-self-start">
-                <h4 class="mb-0">$ {{crypto_equity | floatformat:2}}</h4>
+      <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+          <div class="card-body">
+            <div class="row">
+              <div class="col-9">
+                <div class="d-flex align-items-center align-self-start">
+                  <div class="col-sm-9">
+                    <h4 class="mb-0">$ {{stocks_equity | floatformat:2}}</h4>
+                  </div>
+                  <div class="col-sm-9">
+                    <div class="row">
+                      <tt class="ml-2 mb-0 font-weight-small">today: </tt>
+                      {% if stocks_change < 0 %}
+                        <p class="text-danger ml-2 mb-0 font-weight-medium">$ {{stocks_change | floatformat:2}}</p>
+                      {% else %}
+                        <p class="text-success ml-2 mb-0 font-weight-medium">$ {{stocks_change | floatformat:2}}</p>
+                      {% endif %}
+                    </div>
+                    <div class="row">
+                      <tt class="ml-2 mb-0 font-weight-small">total: </tt>
+                      {% if stocks_total_change < 0 %}
+                        <p class="text-danger ml-2 mb-0 font-weight-medium">$ {{stocks_total_change | floatformat:2}}</p>
+                      {% else %}
+                        <p class="text-success ml-2 mb-0 font-weight-medium">$ {{stocks_total_change | floatformat:2}}</p>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+            <h6 class="text-muted font-weight-normal">Stocks</h6>
           </div>
-          <h6 class="text-muted font-weight-normal">Crypto</h6>
         </div>
       </div>
-    </div>
-    <div class="col-xl-2 col-sm-6 grid-margin stretch-card">
-      <div class="card">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-9">
-              <div class="d-flex align-items-center align-self-start">
-                <h4 class="mb-0">$ {{margin_or_cash | floatformat:2}}</h4>
+      <div class="col-xl-2 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+          <div class="card-body">
+            <div class="row">
+              <div class="col-9">
+                <div class="d-flex align-items-center align-self-start">
+                  <h4 class="mb-0">$ {{crypto_equity | floatformat:2}}</h4>
+                </div>
               </div>
             </div>
+            <h6 class="text-muted font-weight-normal">Crypto</h6>
           </div>
-          <h6 class="text-muted font-weight-normal">Margin used/Cash</h6>
         </div>
       </div>
-    </div>
-    <div class="col-xl-2 col-sm-6 grid-margin stretch-card">
-      <div class="card">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-9">
-              <div class="d-flex align-items-center align-self-start">
-                <h4 class="mb-0">$ {{portfolio_value | floatformat:2}}</h4>
+      <div class="col-xl-2 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+          <div class="card-body">
+            <div class="row">
+              <div class="col-9">
+                <div class="d-flex align-items-center align-self-start">
+                  <h4 class="mb-0">$ {{margin_or_cash | floatformat:2}}</h4>
+                </div>
               </div>
             </div>
+            <h6 class="text-muted font-weight-normal">Margin used/Cash</h6>
           </div>
-          <h6 class="text-muted font-weight-normal">Portfolio Value</h6>
+        </div>
+      </div>
+      <div class="col-xl-2 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+          <div class="card-body">
+            <div class="row">
+              <div class="col-9">
+                <div class="d-flex align-items-center align-self-start">
+                  <h4 class="mb-0">$ {{portfolio_value | floatformat:2}}</h4>
+                </div>
+              </div>
+            </div>
+            <h6 class="text-muted font-weight-normal">Portfolio Value</h6>
+          </div>
         </div>
       </div>
     </div>
+    <div class="row">
+      <div class="col-lg-6 grid-margin stretch-card">
+        <div class="card">
+          <div class="card-body">
+            <h4 class="card-title">Pie chart</h4>
+            <canvas id="pie-chart" style="height:250px"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6 grid-margin stretch-card">
+        <div class="card">
+          <div class="card-body">
+            <h4 class="card-title">Bar chart</h4>
+            <canvas id="barChart" style="height:250px"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <input type="submit" value="Get Order History">
   </div>
-  <div class="row">
-    <div class="col-lg-6 grid-margin stretch-card">
-      <div class="card">
-        <div class="card-body">
-          <h4 class="card-title">Pie chart</h4>
-          <canvas id="pie-chart" style="height:250px"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-6 grid-margin stretch-card">
-      <div class="card">
-        <div class="card-body">
-          <h4 class="card-title">Bar chart</h4>
-          <canvas id="barChart" style="height:250px"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+</form>
 
 {% endblock content %}
 

@@ -66,3 +66,18 @@ class robinhood_instrument_symbol_lookup(models.Model):
     symbol                 = models.CharField(max_length=5)
     name                   = models.CharField(max_length=30)
     instrument_url         = models.CharField(max_length=92)
+
+class robinhood_stock_split_events(models.Model):
+    symbol                 = models.CharField(max_length=5)
+    date                   = models.DateField()
+    # ratio is new to old ratio, for example if stock splits into 2,
+    # then ratio would be 2, and if stock reverse-splits from 2 to 1,
+    # then ratio would be 0.5
+    ratio                  = models.FloatField()
+
+class robinhood_stock_order_history(models.Model):
+    order_type             = models.CharField(max_length=5, default = 'buy')
+    symbol                 = models.CharField(max_length=5)
+    shares                 = models.FloatField()
+    price                  = models.FloatField()
+    timestamp              = models.DateTimeField()

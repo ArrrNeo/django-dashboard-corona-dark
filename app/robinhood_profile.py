@@ -1,10 +1,25 @@
 #!/usr/bin/python3
 
+# misc imports
 # import pprint
+import dateutil.parser
+from django.utils import timezone
+from operator import itemgetter
+
+# https://pyrh.readthedocs.io/en/latest/ imports
+from pyrh import Robinhood
+
+# https://robin-stocks.readthedocs.io/en/latest/functions.html imports
 import robin_stocks as r
 import robin_stocks.profiles as profiles
-from django.utils import timezone
-from app.models import robinhood_stocks, robinhood_summary, robinhood_options, robinhood_crypto, robinhood_instrument_symbol_lookup
+
+# db imports
+from app.models import robinhood_stocks
+from app.models import robinhood_crypto
+from app.models import robinhood_options
+from app.models import robinhood_summary
+from app.models import robinhood_stock_order_history
+from app.models import robinhood_instrument_symbol_lookup
 
 """
 stock fundmentals
@@ -103,10 +118,30 @@ market_data for options
 
 # pp = pprint.PrettyPrinter(indent=4)
 
-class Robinhood():
+class RobinhoodWrapper():
+    @staticmethod
     def login(user, passwd):
         login = r.login(username=user, password=passwd)
 
+    # get symbol from url from db lookup table, if not found save it
+    @staticmethod
+    def get_symbol_from_instrument_url(url):
+        obj = robinhood_instrument_symbol_lookup.objects.filter(instrument_url=url)
+        if not obj:
+            obj                 = robinhood_instrument_symbol_lookup()
+            symbol              = r.get_instrument_by_url(url)['symbol']
+            name                = r.get_name_by_symbol(symbol)
+            obj.symbol          = symbol
+            obj.name            = name
+            obj.instrument_url  = url
+            obj.save()
+        else:
+            obj = obj[0]
+            symbol              = obj.symbol
+            name                = obj.name
+        return symbol, name
+
+    @staticmethod
     def get_my_stock_positions():
         equity_total = 0
         today_p_l_total = 0
@@ -115,21 +150,8 @@ class Robinhood():
         positions_data = r.get_open_stock_positions()
 
         for item in positions_data:
-            instrument_url = item['instrument']
             # check if instrument is present in robinhood_instrument_symbol_lookup table
-            obj = robinhood_instrument_symbol_lookup.objects.filter(instrument_url=instrument_url)
-            if not obj:
-                obj                 = robinhood_instrument_symbol_lookup()
-                symbol              = r.get_instrument_by_url(instrument_url)['symbol']
-                name                = r.get_name_by_symbol(symbol)
-                obj.symbol          = symbol
-                obj.name            = name
-                obj.instrument_url  = instrument_url
-                obj.save()
-            else:
-                obj = obj[0]
-                symbol              = obj.symbol
-                name                = obj.name
+            symbol, name = RobinhoodWrapper.get_symbol_from_instrument_url(item['instrument'])
 
             # check if stock is already in database
             obj = robinhood_stocks.objects.filter(symbol=symbol)
@@ -192,6 +214,7 @@ class Robinhood():
         obj.save()
         return equity_total, today_p_l_total, unrealized_p_l_total
 
+    @staticmethod
     def get_my_options_positions():
         equity_total = 0
         today_p_l_total = 0
@@ -269,6 +292,7 @@ class Robinhood():
         obj.save()
         return equity_total, today_p_l_total, unrealized_p_l_total
 
+    @staticmethod
     def get_my_crypto_positions():
         equity_total = 0
         crypto_position_data = r.get_crypto_positions()
@@ -314,6 +338,7 @@ class Robinhood():
         obj.save()
         return equity_total
 
+    @staticmethod
     def get_my_buying_power():
         buying_power = profiles.load_account_profile()['buying_power']
         # write to summary database
@@ -326,6 +351,7 @@ class Robinhood():
         obj.save()
         return buying_power
 
+    @staticmethod
     def get_my_portfolio_cash():
         portfolio_cash = float(profiles.load_account_profile()['portfolio_cash'])
         # write to summary database
@@ -337,3 +363,48 @@ class Robinhood():
         # save summary database
         obj.save()
         return portfolio_cash
+
+    @staticmethod
+    # using pyrh for get complete order history. following functions for that only
+    def fetch_json_by_url(rb_client, url):
+        return rb_client.session.get(url).json()
+
+    @staticmethod
+    def get_all_history_orders(rb_client):
+        orders = []
+        past_orders = rb_client.order_history()
+        orders.extend(past_orders["results"])
+        while past_orders["next"]:
+            print("{} order fetched".format(len(orders)))
+            next_url = past_orders["next"]
+            past_orders = RobinhoodWrapper.fetch_json_by_url(rb_client, next_url)
+            orders.extend(past_orders["results"])
+        print("{} order fetched".format(len(orders)))
+        return orders
+
+    @staticmethod
+    def get_orders_history(user_id, passwd):
+        pyrh_rb = Robinhood()
+        pyrh_rb.login(username=user_id, password=passwd, challenge_type="sms")
+        past_orders = RobinhoodWrapper.get_all_history_orders(pyrh_rb)
+        # keep past orders in reverse chronological order
+        past_orders_sorted = sorted(past_orders, key=itemgetter('last_transaction_at'), reverse=True)
+        orders_saved_to_db = 0
+        for order in past_orders_sorted:
+            # check if order already in db
+            obj = robinhood_stock_order_history.objects.filter(timestamp=dateutil.parser.parse(order['last_transaction_at']))
+            if not obj:
+                if order['state'] == 'filled':
+                    obj                 = robinhood_stock_order_history()
+                    obj.order_type      = order['side']
+                    obj.price           = order['average_price']
+                    obj.shares          = order['cumulative_quantity']
+                    obj.symbol, name    = RobinhoodWrapper.get_symbol_from_instrument_url(order['instrument'])
+                    obj.state           = order['state']
+                    obj.timestamp       = dateutil.parser.parse(order['last_transaction_at'])
+                    obj.save()
+                    orders_saved_to_db = orders_saved_to_db + 1
+            else:
+                break
+
+        print ('orders_saved_to_db: ' + str(orders_saved_to_db))

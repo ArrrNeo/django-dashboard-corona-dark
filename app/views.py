@@ -10,8 +10,8 @@ from django.db.models import Sum
 from django.template import loader
 from django.http import HttpResponse
 from django.http import JsonResponse
+from app.robinhood_profile import RobinhoodWrapper
 from app.models import robinhood_options, robinhood_stocks
-from app.robinhood_profile import Robinhood
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 
@@ -37,19 +37,22 @@ def pages(request):
         return HttpResponse(html_template.render(context, request))
 
 def summary(request):
-    labels = []
-    data = []
-
     current_dir = os.path.dirname(os.path.realpath(__file__))
     username = open(current_dir + '/username.txt', 'r').read()
     password = open(current_dir + '/password.txt', 'r').read()
 
-    Robinhood.login(user=username, passwd=password)
-    stocks_equity, stocks_upl_today, stocks_upl_total    = Robinhood.get_my_stock_positions()
-    options_equity, options_upl_today, options_upl_total = Robinhood.get_my_options_positions()
-    crypto_equity   = Robinhood.get_my_crypto_positions()
+    if request.method == 'POST':
+        RobinhoodWrapper.get_orders_history(user_id=username, passwd=password)
+
+    labels = []
+    data = []
+
+    RobinhoodWrapper.login(user=username, passwd=password)
+    stocks_equity, stocks_upl_today, stocks_upl_total    = RobinhoodWrapper.get_my_stock_positions()
+    options_equity, options_upl_today, options_upl_total = RobinhoodWrapper.get_my_options_positions()
+    crypto_equity   = RobinhoodWrapper.get_my_crypto_positions()
     total_equity    = stocks_equity + options_equity + crypto_equity
-    portfolio_cash  = Robinhood.get_my_portfolio_cash()
+    portfolio_cash  = RobinhoodWrapper.get_my_portfolio_cash()
     portfolio_value = total_equity + portfolio_cash
 
     labels.append('stocks_equity')
