@@ -8,6 +8,9 @@ from django.db import models
 from django.contrib.auth.models import User
 
 # Create your models here.
+class robinhood_db_timestamps(models.Model):
+    instrument_type        = models.CharField(max_length=5)
+    timestamp              = models.DateTimeField(null=True)
 
 class robinhood_summary(models.Model):
     options_equity         = models.FloatField(default=0)
@@ -17,7 +20,6 @@ class robinhood_summary(models.Model):
     buying_power           = models.FloatField(default=0)
 
 class robinhood_stocks(models.Model):
-    timestamp              = models.DateTimeField(auto_now_add=True)
     symbol                 = models.CharField(max_length=5)
     average_price          = models.FloatField()
     quantity               = models.FloatField()
@@ -32,7 +34,6 @@ class robinhood_stocks(models.Model):
     long_term              = models.BooleanField(default=False)
 
 class robinhood_options(models.Model):
-    timestamp              = models.DateTimeField(auto_now_add=True)
     chain_symbol           = models.CharField(max_length=5)
     option_id              = models.CharField(max_length=52)
     expiration_date        = models.CharField(max_length=20)
@@ -51,7 +52,6 @@ class robinhood_options(models.Model):
     long_term              = models.BooleanField(default=False)
 
 class robinhood_crypto(models.Model):
-    timestamp              = models.DateTimeField(auto_now_add=True)
     code                   = models.CharField(max_length=5)
     quantity               = models.FloatField()
     average_price          = models.FloatField()

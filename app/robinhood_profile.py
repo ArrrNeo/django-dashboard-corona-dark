@@ -18,6 +18,7 @@ from app.models import robinhood_stocks
 from app.models import robinhood_crypto
 from app.models import robinhood_options
 from app.models import robinhood_summary
+from app.models import robinhood_db_timestamps
 from app.models import robinhood_stock_order_history
 from app.models import robinhood_instrument_symbol_lookup
 
@@ -117,11 +118,33 @@ market_data for options
 """
 
 # pp = pprint.PrettyPrinter(indent=4)
+#refresh time in minutes
+REFRESH_TIME = 15
 
 class RobinhoodWrapper():
     @staticmethod
     def login(user, passwd):
         login = r.login(username=user, password=passwd)
+
+    @staticmethod
+    def is_update_needed(instrument_type):
+        obj = robinhood_db_timestamps.objects.filter(instrument_type=instrument_type)
+        if not obj:
+            obj = robinhood_db_timestamps()
+            obj.timestamp = timezone.now()
+            obj.instrument_type = instrument_type
+            obj.save()
+            return True
+        else:
+            obj = obj[0]
+            refresh_time = obj.timestamp + timezone.timedelta(minutes=REFRESH_TIME)
+            # check if update is needed
+            if timezone.now() < refresh_time:
+                return False
+            # save the latest update timestamp
+            obj.timestamp = timezone.now()
+            obj.save()
+            return True
 
     # get symbol from url from db lookup table, if not found save it
     @staticmethod
@@ -147,71 +170,72 @@ class RobinhoodWrapper():
         today_p_l_total = 0
         unrealized_p_l_total = 0
 
-        positions_data = r.get_open_stock_positions()
-
-        for item in positions_data:
-            # check if instrument is present in robinhood_instrument_symbol_lookup table
-            symbol, name = RobinhoodWrapper.get_symbol_from_instrument_url(item['instrument'])
-
-            # check if stock is already in database
-            obj = robinhood_stocks.objects.filter(symbol=symbol)
-            if not obj:
-                # create and update: fixed info
-                obj                 = robinhood_stocks()
-                obj.symbol          = symbol
-                obj.name            = name
+        if RobinhoodWrapper.is_update_needed('stocks'):
+            # TODO: remove following line and find a way to delete sold securities from db
+            robinhood_stocks.objects.all().delete()
+            # get current owned securites and save to db
+            positions_data = r.get_open_stock_positions()
+            for item in positions_data:
+                # check if instrument is present in robinhood_instrument_symbol_lookup table
+                symbol, name = RobinhoodWrapper.get_symbol_from_instrument_url(item['instrument'])
+                # check if stock is already in database
+                obj = robinhood_stocks.objects.filter(symbol=symbol)
+                if not obj:
+                    # create and update: fixed info
+                    obj                 = robinhood_stocks()
+                    obj.symbol          = symbol
+                    obj.name            = name
+                else:
+                    obj = obj[0]
+                # update: dynamic info
+                average_price           = float(item['average_buy_price'])
+                quantity                = float(item['quantity'])
+                latest_price            = float(r.get_latest_price(symbol)[0])
+                open_price              = float(r.get_fundamentals(symbol)[0]['open'])
+                equity                  = latest_price * quantity
+                cost_basis              = average_price * quantity
+                if not quantity:
+                    unrealized_p_l = 0
+                    unrealized_p_l_percent = 0
+                    today_p_l = 0
+                    today_p_l_percent = 0
+                else:
+                    unrealized_p_l          = equity - cost_basis
+                    unrealized_p_l_percent  = (unrealized_p_l / cost_basis) * 100
+                    today_p_l               = (latest_price - open_price) * quantity
+                    today_p_l_percent       = (latest_price - open_price) / open_price * 100
+                # write to database
+                obj.average_price           = average_price
+                obj.quantity                = quantity
+                # TODO: get correct open_price
+                obj.latest_price            = latest_price
+                obj.equity                  = equity
+                obj.cost_basis              = cost_basis
+                obj.open_price              = open_price
+                obj.today_p_l               = today_p_l
+                obj.today_p_l_percent       = today_p_l_percent
+                obj.unrealized_p_l          = unrealized_p_l
+                obj.unrealized_p_l_percent  = unrealized_p_l_percent
+                # save database
+                obj.save()
+                equity_total                = equity_total + equity
+                today_p_l_total             = today_p_l_total + today_p_l
+                unrealized_p_l_total        = unrealized_p_l_total + unrealized_p_l
+            # write to summary database
+            if not robinhood_summary.objects.all():
+                obj = robinhood_summary()
             else:
-                obj = obj[0]
-                refresh_time        = obj.timestamp + timezone.timedelta(minutes=15)
-                # check if update is needed
-                if timezone.now() < refresh_time:
-                    equity_total            = equity_total + obj.equity
-                    today_p_l_total         = today_p_l_total + obj.today_p_l
-                    unrealized_p_l_total    = unrealized_p_l_total + obj.unrealized_p_l
-                    continue
-            # update: dynamic info
-            average_price           = float(item['average_buy_price'])
-            quantity                = float(item['quantity'])
-            latest_price            = float(r.get_latest_price(symbol)[0])
-            open_price              = float(r.get_fundamentals(symbol)[0]['open'])
-            equity                  = latest_price * quantity
-            cost_basis              = average_price * quantity
-            if not quantity:
-                unrealized_p_l = 0
-                unrealized_p_l_percent = 0
-                today_p_l = 0
-                today_p_l_percent = 0
-            else:
-                unrealized_p_l          = equity - cost_basis
-                unrealized_p_l_percent  = (unrealized_p_l / cost_basis) * 100
-                today_p_l               = (latest_price - open_price) * quantity
-                today_p_l_percent       = (latest_price - open_price) / open_price * 100
-            # write to database
-            obj.average_price           = average_price
-            obj.quantity                = quantity
-            # TODO: get correct open_price
-            obj.latest_price            = latest_price
-            obj.equity                  = equity
-            obj.cost_basis              = cost_basis
-            obj.open_price              = open_price
-            obj.today_p_l               = today_p_l
-            obj.today_p_l_percent       = today_p_l_percent
-            obj.unrealized_p_l          = unrealized_p_l
-            obj.unrealized_p_l_percent  = unrealized_p_l_percent
-            obj.timestamp               = timezone.now()
+                obj = robinhood_summary.objects.all()[0]
+            obj.stocks_equity = equity_total
             # save database
             obj.save()
-            equity_total                = equity_total + equity
-            today_p_l_total             = today_p_l_total + today_p_l
-            unrealized_p_l_total        = unrealized_p_l_total + unrealized_p_l
-        # write to summary database
-        if not robinhood_summary.objects.all():
-            obj = robinhood_summary()
         else:
-            obj = robinhood_summary.objects.all()[0]
-        obj.stocks_equity = equity_total
-        # save database
-        obj.save()
+            qset = robinhood_stocks.objects.all()
+            if qset:
+                for item in qset:
+                    equity_total         = equity_total         + item.equity
+                    today_p_l_total      = today_p_l_total      + item.today_p_l
+                    unrealized_p_l_total = unrealized_p_l_total + item.unrealized_p_l
         return equity_total, today_p_l_total, unrealized_p_l_total
 
     @staticmethod
@@ -220,76 +244,79 @@ class RobinhoodWrapper():
         today_p_l_total = 0
         unrealized_p_l_total = 0
 
-        options_position_data = r.get_open_option_positions()
-
-        for item in options_position_data:
-            option_id = item['option_id']
-            # check if option is already in database
-            if not robinhood_options.objects.filter(option_id=option_id):
-                # update: fixed info:
-                contract_into       = r.get_option_instrument_data_by_id(option_id)
-                strike_price        = float(contract_into['strike_price'])
-                expiration_date     = contract_into['expiration_date']
-                option_type         = contract_into['type']
-                chain_symbol        = item['chain_symbol']
-                obj                 = robinhood_options()
-                obj.option_id       = option_id
-                obj.strike_price    = strike_price
-                obj.expiration_date = expiration_date
-                obj.option_type     = option_type
-                obj.chain_symbol    = chain_symbol
+        if RobinhoodWrapper.is_update_needed('options'):
+            # TODO: remove following line and find a way to delete sold securities from db
+            robinhood_options.objects.all().delete()
+            # get current owned securites and save to db
+            options_position_data = r.get_open_option_positions()
+            for item in options_position_data:
+                option_id = item['option_id']
+                # check if option is already in database
+                if not robinhood_options.objects.filter(option_id=option_id):
+                    # update: fixed info:
+                    contract_into       = r.get_option_instrument_data_by_id(option_id)
+                    strike_price        = float(contract_into['strike_price'])
+                    expiration_date     = contract_into['expiration_date']
+                    option_type         = contract_into['type']
+                    chain_symbol        = item['chain_symbol']
+                    obj                 = robinhood_options()
+                    obj.option_id       = option_id
+                    obj.strike_price    = strike_price
+                    obj.expiration_date = expiration_date
+                    obj.option_type     = option_type
+                    obj.chain_symbol    = chain_symbol
+                else:
+                    obj                 = robinhood_options.objects.get(option_id=option_id)
+                # update: dynamic info
+                average_price        = float(item['average_price']) / float(item['trade_value_multiplier'])
+                quantity             = float(item['quantity'])
+                market_data          = r.get_option_market_data_by_id(option_id)
+                previous_close_price = float(market_data['previous_close_price'])
+                current_price        = float(market_data['adjusted_mark_price'])
+                equity               = current_price * quantity * float(item['trade_value_multiplier'])
+                cost_basis           = average_price * quantity * float(item['trade_value_multiplier'])
+                if not quantity:
+                    unrealized_p_l = 0
+                    unrealized_p_l_percent = 0
+                    today_p_l = 0
+                    today_p_l_percent = 0
+                else:
+                    unrealized_p_l         = equity - cost_basis
+                    unrealized_p_l_percent = (unrealized_p_l / cost_basis) * 100
+                    today_p_l = (current_price - previous_close_price) * quantity * float(item['trade_value_multiplier'])
+                    today_p_l_percent = (current_price - previous_close_price) / previous_close_price * 100
+                # write to database
+                obj.average_price          = average_price
+                obj.quantity               = quantity
+                obj.current_price          = current_price
+                obj.equity                 = equity
+                obj.cost_basis             = cost_basis
+                obj.previous_close_price   = previous_close_price
+                obj.today_p_l              = today_p_l
+                obj.today_p_l_percent      = today_p_l_percent
+                obj.unrealized_p_l         = unrealized_p_l
+                obj.unrealized_p_l_percent = unrealized_p_l_percent
+                obj.timestamp              = timezone.now()
+                # save database
+                obj.save()
+                equity_total               = equity_total + equity
+                today_p_l_total            = today_p_l_total + today_p_l
+                unrealized_p_l_total       = unrealized_p_l_total + unrealized_p_l
+            # write to summary database
+            if not robinhood_summary.objects.all():
+                obj = robinhood_summary()
             else:
-                obj                 = robinhood_options.objects.get(option_id=option_id)
-                refresh_time        = obj.timestamp + timezone.timedelta(minutes=15)
-                # check if update is needed
-                if timezone.now() < refresh_time:
-                    equity_total            = equity_total + obj.equity
-                    today_p_l_total         = today_p_l_total + obj.today_p_l
-                    unrealized_p_l_total    = unrealized_p_l_total + obj.unrealized_p_l
-                    continue
-            # update: dynamic info
-            average_price        = float(item['average_price']) / float(item['trade_value_multiplier'])
-            quantity             = float(item['quantity'])
-            market_data          = r.get_option_market_data_by_id(option_id)
-            previous_close_price = float(market_data['previous_close_price'])
-            current_price        = float(market_data['adjusted_mark_price'])
-            equity               = current_price * quantity * float(item['trade_value_multiplier'])
-            cost_basis           = average_price * quantity * float(item['trade_value_multiplier'])
-            if not quantity:
-                unrealized_p_l = 0
-                unrealized_p_l_percent = 0
-                today_p_l = 0
-                today_p_l_percent = 0
-            else:
-                unrealized_p_l         = equity - cost_basis
-                unrealized_p_l_percent = (unrealized_p_l / cost_basis) * 100
-                today_p_l = (current_price - previous_close_price) * quantity * float(item['trade_value_multiplier'])
-                today_p_l_percent = (current_price - previous_close_price) / previous_close_price * 100
-            # write to database
-            obj.average_price          = average_price
-            obj.quantity               = quantity
-            obj.current_price          = current_price
-            obj.equity                 = equity
-            obj.cost_basis             = cost_basis
-            obj.previous_close_price   = previous_close_price
-            obj.today_p_l              = today_p_l
-            obj.today_p_l_percent      = today_p_l_percent
-            obj.unrealized_p_l         = unrealized_p_l
-            obj.unrealized_p_l_percent = unrealized_p_l_percent
-            obj.timestamp              = timezone.now()
+                obj = robinhood_summary.objects.all()[0]
+            obj.options_equity = equity_total
             # save database
             obj.save()
-            equity_total               = equity_total + equity
-            today_p_l_total            = today_p_l_total + today_p_l
-            unrealized_p_l_total       = unrealized_p_l_total + unrealized_p_l
-        # write to summary database
-        if not robinhood_summary.objects.all():
-            obj = robinhood_summary()
         else:
-            obj = robinhood_summary.objects.all()[0]
-        obj.options_equity = equity_total
-        # save database
-        obj.save()
+            qset = robinhood_options.objects.all()
+            if qset:
+                for item in qset:
+                    equity_total         = equity_total         + item.equity
+                    today_p_l_total      = today_p_l_total      + item.today_p_l
+                    unrealized_p_l_total = unrealized_p_l_total + item.unrealized_p_l
         return equity_total, today_p_l_total, unrealized_p_l_total
 
     @staticmethod
