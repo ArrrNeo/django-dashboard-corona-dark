@@ -37,24 +37,34 @@ def pages(request):
         return HttpResponse(html_template.render(context, request))
 
 def summary(request):
+    data = []
+    labels = []
+    stocks_equity = 0
+    options_equity = 0
+    crypto_equity = 0
+    total_equity = 1
+    portfolio_cash = 0
+    portfolio_value = 0
+    stocks_unrealized_p_l_total = 0
+    options_unrealized_p_l_total = 0
+    crypto_unrealized_p_l_total = 0
     current_dir = os.path.dirname(os.path.realpath(__file__))
     username = open(current_dir + '/username.txt', 'r').read()
     password = open(current_dir + '/password.txt', 'r').read()
 
     if request.method == 'POST':
-        RobinhoodWrapper.get_orders_history(user_id=username, passwd=password)
-
-    labels = []
-    data = []
-
-    RobinhoodWrapper.login(user=username, passwd=password)
-    stocks_equity, stocks_upl_today, stocks_upl_total    = RobinhoodWrapper.get_my_stock_positions()
-    options_equity, options_upl_today, options_upl_total = RobinhoodWrapper.get_my_options_positions()
-    crypto_equity   = RobinhoodWrapper.get_my_crypto_positions()
-    total_equity    = stocks_equity + options_equity + crypto_equity
-    portfolio_cash  = RobinhoodWrapper.get_my_portfolio_cash()
-    portfolio_value = total_equity + portfolio_cash
-
+        if request.POST.get("get_order_history"):
+            RobinhoodWrapper.get_orders_history(user_id=username, passwd=password)
+        elif request.POST.get("get_profile_data"):
+            RobinhoodWrapper.get_profile_data(user_id=username, passwd=password)
+        elif request.POST.get("calculate_today_pl"):
+            print ("TBD")
+    stocks_equity, stocks_unrealized_p_l_total   = RobinhoodWrapper.get_my_stock_positions()
+    options_equity, options_unrealized_p_l_total = RobinhoodWrapper.get_my_options_positions()
+    crypto_equity, crypto_unrealized_p_l_total   = RobinhoodWrapper.get_my_crypto_positions()
+    total_equity                                 = stocks_equity + options_equity + crypto_equity
+    portfolio_cash                               = RobinhoodWrapper.get_my_portfolio_cash()
+    portfolio_value                              = total_equity + portfolio_cash
     labels.append('stocks_equity')
     labels.append('options_equity')
     labels.append('crypto_equity')
@@ -63,23 +73,19 @@ def summary(request):
     data.append(round((crypto_equity  / total_equity) * 100, 2))
 
     data_for_template = {
-                            'labels_1'             : labels,
-                            'data_1'               : data,
-                            'labels_2'             : labels,
-                            'data_2'               : data,
-                            'options_equity'       : options_equity,
-                            'options_change'       : options_upl_today,
-                            'options_total_change' : options_upl_total,
-                            'stocks_equity'        : stocks_equity,
-                            'stocks_change'        : stocks_upl_today,
-                            'stocks_total_change'  : stocks_upl_total,
-                            'crypto_equity'        : crypto_equity,
-                            'crypto_change'        : 15.67,
-                            'crypto_total_change'  : 45.67,
-                            'margin_or_cash'       : portfolio_cash,
-                            'portfolio_value'      : portfolio_value,
-                        }
-
+        'labels_1'                     : labels,
+        'data_1'                       : data,
+        'labels_2'                     : labels,
+        'data_2'                       : data,
+        'options_equity'               : options_equity,
+        'options_unrealized_p_l_total' : options_unrealized_p_l_total,
+        'stocks_equity'                : stocks_equity,
+        'stocks_unrealized_p_l_total'  : stocks_unrealized_p_l_total,
+        'crypto_equity'                : crypto_equity,
+        'crypto_unrealized_p_l_total'  : crypto_unrealized_p_l_total,
+        'margin_or_cash'               : portfolio_cash,
+        'portfolio_value'              : portfolio_value,
+    }
     return render(request, 'summary.html', data_for_template)
 
 def options(request):

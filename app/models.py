@@ -27,10 +27,10 @@ class robinhood_stocks(models.Model):
     latest_price           = models.FloatField()
     equity                 = models.FloatField()
     cost_basis             = models.FloatField()
-    unrealized_p_l         = models.FloatField()
-    unrealized_p_l_percent = models.FloatField()
-    today_p_l              = models.FloatField()
-    today_p_l_percent      = models.FloatField()
+    unrealized_p_l         = models.FloatField(null=True)
+    unrealized_p_l_percent = models.FloatField(null=True)
+    today_p_l              = models.FloatField(null=True)
+    today_p_l_percent      = models.FloatField(null=True)
     long_term              = models.BooleanField(default=False)
 
 class robinhood_options(models.Model):
@@ -45,22 +45,21 @@ class robinhood_options(models.Model):
     current_price          = models.FloatField()
     equity                 = models.FloatField()
     cost_basis             = models.FloatField()
-    unrealized_p_l         = models.FloatField()
-    unrealized_p_l_percent = models.FloatField()
-    today_p_l              = models.FloatField()
-    today_p_l_percent      = models.FloatField()
+    unrealized_p_l         = models.FloatField(null=True)
+    unrealized_p_l_percent = models.FloatField(null=True)
+    today_p_l              = models.FloatField(null=True)
+    today_p_l_percent      = models.FloatField(null=True)
     long_term              = models.BooleanField(default=False)
 
 class robinhood_crypto(models.Model):
     code                   = models.CharField(max_length=5)
     quantity               = models.FloatField()
     average_price          = models.FloatField()
-    open_price             = models.FloatField()
     current_price          = models.FloatField()
     equity                 = models.FloatField()
     cost_basis             = models.FloatField()
-    unrealized_p_l         = models.FloatField()
-    unrealized_p_l_percent = models.FloatField()
+    unrealized_p_l         = models.FloatField(null=True)
+    unrealized_p_l_percent = models.FloatField(null=True)
 
 class robinhood_instrument_symbol_lookup(models.Model):
     symbol                 = models.CharField(max_length=5)
