@@ -2,9 +2,12 @@
 
 # misc imports
 # import pprint
+import os
+import csv
+import datetime
 import dateutil.parser
-from django.utils import timezone
 from operator import itemgetter
+from django.utils import timezone
 
 # https://pyrh.readthedocs.io/en/latest/ imports
 from pyrh import Robinhood
@@ -19,6 +22,7 @@ from app.models import robinhood_crypto
 from app.models import robinhood_options
 from app.models import robinhood_summary
 from app.models import robinhood_db_timestamps
+from app.models import robinhood_stock_split_events
 from app.models import robinhood_stock_order_history
 from app.models import robinhood_instrument_symbol_lookup
 
@@ -169,6 +173,17 @@ class RobinhoodWrapper():
         obj.buying_power    = float(profiles.load_account_profile()['buying_power'])
         obj.portfolio_cash  = float(profiles.load_account_profile()['portfolio_cash'])
         obj.save()
+
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        robinhood_stock_split_events.objects.all().delete()
+        stock_splits_csv = csv.reader(open(current_dir + '/stock_splits.csv', 'r'))
+        for row in stock_splits_csv:
+            print (row)
+            obj = robinhood_stock_split_events()
+            obj.symbol = row[0]
+            obj.date = datetime.datetime.strptime(row[1], "%Y-%m-%d").date()
+            obj.ratio = float(row[2])
+            obj.save()
 
         if RobinhoodWrapper.is_update_needed('stocks'):
             # remove current entries
