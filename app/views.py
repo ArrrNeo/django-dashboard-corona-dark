@@ -62,15 +62,17 @@ def summary(request):
     stocks_equity, stocks_unrealized_p_l_total   = RobinhoodWrapper.get_my_stock_positions()
     options_equity, options_unrealized_p_l_total = RobinhoodWrapper.get_my_options_positions()
     crypto_equity, crypto_unrealized_p_l_total   = RobinhoodWrapper.get_my_crypto_positions()
-    total_equity                                 = stocks_equity + options_equity + crypto_equity
     portfolio_cash                               = RobinhoodWrapper.get_my_portfolio_cash()
-    portfolio_value                              = total_equity + portfolio_cash
+    total_equity                                 = stocks_equity + options_equity + crypto_equity + portfolio_cash
+    portfolio_value                              = total_equity
     labels.append('stocks_equity')
     labels.append('options_equity')
     labels.append('crypto_equity')
+    labels.append('cash')
     data.append(round((stocks_equity  / total_equity) * 100, 2))
     data.append(round((options_equity / total_equity) * 100, 2))
     data.append(round((crypto_equity  / total_equity) * 100, 2))
+    data.append(round((portfolio_cash / total_equity) * 100, 2))
 
     data_for_template = {
         'labels_1'                     : labels,
@@ -84,7 +86,7 @@ def summary(request):
         'crypto_equity'                : crypto_equity,
         'crypto_unrealized_p_l_total'  : crypto_unrealized_p_l_total,
         'margin_or_cash'               : portfolio_cash,
-        'portfolio_value'              : portfolio_value,
+        'portfolio_value'              : total_equity,
     }
     return render(request, 'summary.html', data_for_template)
 
