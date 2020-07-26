@@ -28,10 +28,8 @@
                     <th> cost_basis </th>
                     <th> open_price </th>
                     <th> latest_price </th>
-                    <!-- <th> unrealized_pl </th> -->
-                    <!-- <th> unrealized_pl % </th> -->
-                    <!-- <th> today_pl </th> -->
-                    <!-- <th> today_pl % </th> -->
+                    <th> unrealized_pl </th>
+                    <th> today_unrealized_pl </th>
                     <th> long_term </th>
                   </tr>
                 </thead>
@@ -45,10 +43,8 @@
                       <td> {{ row.cost_basis | floatformat:2 }} </td>
                       <td> {{ row.open_price | floatformat:2 }} </td>
                       <td> {{ row.latest_price | floatformat:2 }} </td>
-                      <!-- <td> {{ row.unrealized_p_l | floatformat:2 }} </td> -->
-                      <!-- <td> {{ row.unrealized_p_l_percent | floatformat:2 }} </td> -->
-                      <!-- <td> {{ row.today_p_l | floatformat:2 }} </td> -->
-                      <!-- <td> {{ row.today_p_l_percent | floatformat:2 }} </td> -->
+                      <td> {{ row.unrealized_pl | floatformat:2 }} </td>
+                      <td> {{ row.today_unrealized_pl | floatformat:2 }} </td>
                       <td> <input type="checkbox" name="long_term" value={{ row.symbol }} {% if row.long_term %} checked {% endif %} /> </td>
                     </tr>
                   {% endfor %}
