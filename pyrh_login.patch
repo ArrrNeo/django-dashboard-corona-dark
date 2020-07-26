@@ -1,0 +1,54 @@
+2a3
+> import os
+8a10
+> import pickle
+131a134,170
+>     def get_tokens(self):
+>         home_dir = os.path.expanduser("~")
+>         data_dir = os.path.join(home_dir, ".tokens")
+>         if not os.path.exists(data_dir):
+>             os.makedirs(data_dir)
+>         creds_file = "robinhood.pickle"
+>         pickle_path = os.path.join(data_dir, creds_file)
+>         try:
+>             with open(pickle_path, 'rb') as f:
+>                 pickle_data = pickle.load(f)
+>                 access_token = pickle_data['access_token']
+>                 token_type = pickle_data['token_type']
+>                 refresh_token = pickle_data['refresh_token']
+>                 device_token = pickle_data['device_token']
+>                 return access_token, token_type, refresh_token, device_token
+>         except:
+>             print("ERROR: There was an issue loading pickle file. Authentication may be expired - logging in normally.")
+>     
+>     def set_tokens(self, access_token, token_type, refresh_token, device_token):
+>         home_dir = os.path.expanduser("~")
+>         data_dir = os.path.join(home_dir, ".tokens")
+>         if not os.path.exists(data_dir):
+>             os.makedirs(data_dir)
+>         creds_file = "robinhood.pickle"
+>         pickle_path = os.path.join(data_dir, creds_file)
+>         try:
+>             with open(pickle_path, 'wb') as f:
+>                 pickle.dump({
+>                                 'token_type'   : token_type,
+>                                 'access_token' : access_token,
+>                                 'refresh_token': refresh_token,
+>                                 'device_token' : device_token
+>                             },
+>                             f)
+>         except:
+>             print("ERROR: There was an issue writing pickle file. Authentication may be expired - logging in normally.")
+> 
+174a214
+>             self.auth_token, token_type, self.refresh_token, self.device_token = self.get_tokens()
+180c220
+<                 "expires_in": "86400",
+---
+>                 "expires_in": 86400,
+196a237
+>                     self.set_tokens(self.auth_token, "Bearer", self.refresh_token, self.device_token)
+263c304
+<                 "expires_in": "86400",
+---
+>                 "expires_in": 86400,
