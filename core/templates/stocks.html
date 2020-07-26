@@ -49,7 +49,7 @@
                       <!-- <td> {{ row.unrealized_p_l_percent | floatformat:2 }} </td> -->
                       <!-- <td> {{ row.today_p_l | floatformat:2 }} </td> -->
                       <!-- <td> {{ row.today_p_l_percent | floatformat:2 }} </td> -->
-                      <td> <input type="checkbox" name="long_term" value={{ row.instrument_url }} {% if row.long_term %} checked {% endif %} /> </td>
+                      <td> <input type="checkbox" name="long_term" value={{ row.symbol }} {% if row.long_term %} checked {% endif %} /> </td>
                     </tr>
                   {% endfor %}
                 </tbody>

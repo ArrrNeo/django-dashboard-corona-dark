@@ -119,7 +119,7 @@ def stocks(request):
     if request.method == 'POST':
         long_term_list = request.POST.getlist('long_term')
         for item in qset:
-            if item.instrument_url in long_term_list:
+            if item.symbol in long_term_list:
                 print (item.symbol)
                 item.long_term = True
             else:
