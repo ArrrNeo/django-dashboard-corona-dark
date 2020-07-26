@@ -208,6 +208,7 @@ class RobinhoodWrapper():
             obj = robinhood_summary.objects.all()
             if not obj:
                 obj = robinhood_summary()
+                obj.timestamp = timezone.now()
             else:
                 obj = obj[0]
             obj.buying_power    = float(profiles.load_account_profile()['buying_power'])
@@ -388,7 +389,12 @@ class RobinhoodWrapper():
         stocks = {}
 
         # for realized_pl today/total
-        summary = robinhood_summary.objects.all()[0]
+        summary = robinhood_summary.objects.all()
+        if summary:
+            summary = summary[0]
+        else:
+            summary = robinhood_summary()
+            summary.timestamp = timezone.now()
 
         orders = robinhood_stock_order_history.objects.filter(processed=False).order_by('timestamp')
         # parse complete robinhood_stock_order_history.

@@ -60,8 +60,8 @@ def summary(request):
     if request.method == 'POST':
         if request.POST.get("get_profile_data"):
             RobinhoodWrapper.get_orders_history(user_id=username, passwd=password)
-            RobinhoodWrapper.calculate_pl() # this calculates pl on order history
             RobinhoodWrapper.get_profile_data(user_id=username, passwd=password)
+            RobinhoodWrapper.calculate_pl() # this calculates pl on order history
             stocks_equity,  today_stocks_unrealized_pl,  total_stocks_unrealized_pl  = RobinhoodWrapper.get_my_stock_positions()
             options_equity, today_options_unrealized_pl, total_options_unrealized_pl = RobinhoodWrapper.get_my_options_positions()
             today_stocks_realized_pl, total_stocks_realized_pl                       = RobinhoodWrapper.get_realized_pl()
