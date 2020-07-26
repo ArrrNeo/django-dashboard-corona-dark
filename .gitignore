@@ -27,3 +27,5 @@ staticfiles/*
 
 username.txt
 password.txt
+
+app/migrations/0*.py
