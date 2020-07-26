@@ -41,38 +41,44 @@ def summary(request):
     labels = []
     stocks_equity = 0
     options_equity = 0
-    crypto_equity = 0
     total_equity = 1
     portfolio_cash = 0
-    portfolio_value = 0
-    stocks_unrealized_p_l_total = 0
-    options_unrealized_p_l_total = 0
-    crypto_unrealized_p_l_total = 0
+
+    today_stocks_realized_pl = 0
+    total_stocks_realized_pl = 0
+
+    today_stocks_unrealized_pl = 0
+    total_stocks_unrealized_pl = 0
+
+    today_options_unrealized_pl = 0
+    total_options_unrealized_pl = 0
+
     current_dir = os.path.dirname(os.path.realpath(__file__))
     username = open(current_dir + '/username.txt', 'r').read()
     password = open(current_dir + '/password.txt', 'r').read()
 
     if request.method == 'POST':
-        if request.POST.get("get_order_history"):
+        if request.POST.get("get_profile_data"):
             RobinhoodWrapper.get_orders_history(user_id=username, passwd=password)
-        elif request.POST.get("get_profile_data"):
+            RobinhoodWrapper.calculate_pl() # this calculates pl on order history
             RobinhoodWrapper.get_profile_data(user_id=username, passwd=password)
-        elif request.POST.get("calculate_today_pl"):
-            print ("TBD")
-    stocks_equity, stocks_unrealized_p_l_total   = RobinhoodWrapper.get_my_stock_positions()
-    options_equity, options_unrealized_p_l_total = RobinhoodWrapper.get_my_options_positions()
-    crypto_equity, crypto_unrealized_p_l_total   = RobinhoodWrapper.get_my_crypto_positions()
-    portfolio_cash                               = RobinhoodWrapper.get_my_portfolio_cash()
-    total_equity                                 = stocks_equity + options_equity + crypto_equity + portfolio_cash
-    portfolio_value                              = total_equity
+            stocks_equity,  today_stocks_unrealized_pl,  total_stocks_unrealized_pl  = RobinhoodWrapper.get_my_stock_positions()
+            options_equity, today_options_unrealized_pl, total_options_unrealized_pl = RobinhoodWrapper.get_my_options_positions()
+            today_stocks_realized_pl, total_stocks_realized_pl                       = RobinhoodWrapper.get_realized_pl()
+            portfolio_cash                                                           = RobinhoodWrapper.get_my_portfolio_cash()
+            total_equity                                                             = stocks_equity + options_equity + portfolio_cash
+
     labels.append('stocks_equity')
     labels.append('options_equity')
-    labels.append('crypto_equity')
     labels.append('cash')
-    data.append(round((stocks_equity  / total_equity) * 100, 2))
-    data.append(round((options_equity / total_equity) * 100, 2))
-    data.append(round((crypto_equity  / total_equity) * 100, 2))
-    data.append(round((portfolio_cash / total_equity) * 100, 2))
+    if total_equity:
+        data.append(round((stocks_equity  / total_equity) * 100, 2))
+        data.append(round((options_equity / total_equity) * 100, 2))
+        data.append(round((portfolio_cash / total_equity) * 100, 2))
+    else:
+        data.append(0)
+        data.append(0)
+        data.append(0)
 
     data_for_template = {
         'labels_1'                     : labels,
@@ -80,11 +86,13 @@ def summary(request):
         'labels_2'                     : labels,
         'data_2'                       : data,
         'options_equity'               : options_equity,
-        'options_unrealized_p_l_total' : options_unrealized_p_l_total,
+        'total_options_unrealized_pl'  : total_options_unrealized_pl,
+        'today_options_unrealized_pl'  : today_options_unrealized_pl,
         'stocks_equity'                : stocks_equity,
-        'stocks_unrealized_p_l_total'  : stocks_unrealized_p_l_total,
-        'crypto_equity'                : crypto_equity,
-        'crypto_unrealized_p_l_total'  : crypto_unrealized_p_l_total,
+        'today_stocks_realized_pl'     : today_stocks_realized_pl,
+        'total_stocks_realized_pl'     : total_stocks_realized_pl,
+        'total_stocks_unrealized_pl'   : total_stocks_unrealized_pl,
+        'today_stocks_unrealized_pl'   : today_stocks_unrealized_pl,
         'margin_or_cash'               : portfolio_cash,
         'portfolio_value'              : total_equity,
     }

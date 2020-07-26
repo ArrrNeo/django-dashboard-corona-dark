@@ -18,15 +18,35 @@ import robin_stocks.profiles as profiles
 
 # db imports
 from app.models import robinhood_stocks
-from app.models import robinhood_crypto
 from app.models import robinhood_options
 from app.models import robinhood_summary
-from app.models import robinhood_db_timestamps
 from app.models import robinhood_stock_split_events
 from app.models import robinhood_stock_order_history
 from app.models import robinhood_instrument_symbol_lookup
+from app.models import robinhood_stock_order_history_next_urls
 
 """
+stock position element
+{
+    'url': 'https://api.robinhood.com/positions/5QR11032/8f92e76f-1e0e-4478-8580-16a6ffcfaef5/'
+    'instrument': 'https://api.robinhood.com/instruments/8f92e76f-1e0e-4478-8580-16a6ffcfaef5/'
+    'account': 'https://api.robinhood.com/accounts/5QR11032/'
+    'account_number': '5QR11032'
+    'average_buy_price': '321.4969'
+    'pending_average_buy_price': '321.4969'
+    'quantity': '0.06220900'
+    'intraday_average_buy_price': '0.0000'
+    'intraday_quantity': '0.00000000'
+    'shares_held_for_buys': '0.00000000'
+    'shares_held_for_sells': '0.00000000'
+    'shares_held_for_stock_grants': '0.00000000'
+    'shares_held_for_options_collateral': '0.00000000'
+    'shares_held_for_options_events': '0.00000000'
+    'shares_pending_from_options_events': '0.00000000'
+    'updated_at': '2020-07-15T17:50:58.941303Z'
+    'created_at': '2020-07-13T16:47:28.925326Z'
+}
+
 stock fundmentals
 [
     {
@@ -127,23 +147,27 @@ REFRESH_TIME = 15
 
 class RobinhoodWrapper():
     @staticmethod
-    def is_update_needed(instrument_type):
-        obj = robinhood_db_timestamps.objects.filter(instrument_type=instrument_type)
-        if not obj:
-            obj = robinhood_db_timestamps()
-            obj.timestamp = timezone.now()
-            obj.instrument_type = instrument_type
-            obj.save()
+    def is_update_needed():
+        summary = robinhood_summary.objects.all()
+        if not summary:
+            summary = robinhood_summary()
+            summary.timestamp = timezone.now()
+            summary.save()
             return True
         else:
-            obj = obj[0]
-            refresh_time = obj.timestamp + timezone.timedelta(minutes=REFRESH_TIME)
+            summary = summary[0]
+            # if today date is > timestamp date, reset today_realized_pl
+            if timezone.now().date() > summary.timestamp.date():
+                summary.today_realized_pl = 0
+                summary.today_unrealized_pl = 0
+
+            refresh_time = summary.timestamp + timezone.timedelta(minutes=REFRESH_TIME)
             # check if update is needed
             if timezone.now() < refresh_time:
                 return False
             # save the latest update timestamp
-            obj.timestamp = timezone.now()
-            obj.save()
+            summary.timestamp = timezone.now()
+            summary.save()
             return True
 
     # get symbol from url from db lookup table, if not found save it
@@ -168,12 +192,6 @@ class RobinhoodWrapper():
     def get_profile_data(user_id, passwd):
         r.login(username=user_id, password=passwd)
 
-        robinhood_summary.objects.all().delete()
-        obj                 = robinhood_summary()
-        obj.buying_power    = float(profiles.load_account_profile()['buying_power'])
-        obj.portfolio_cash  = float(profiles.load_account_profile()['portfolio_cash'])
-        obj.save()
-
         current_dir = os.path.dirname(os.path.realpath(__file__))
         robinhood_stock_split_events.objects.all().delete()
         stock_splits_csv = csv.reader(open(current_dir + '/stock_splits.csv', 'r'))
@@ -183,9 +201,19 @@ class RobinhoodWrapper():
             obj.symbol = row[0]
             obj.date = datetime.datetime.strptime(row[1], "%Y-%m-%d").date()
             obj.ratio = float(row[2])
+            obj.new_symbol = row[3]
             obj.save()
 
-        if RobinhoodWrapper.is_update_needed('stocks'):
+        if RobinhoodWrapper.is_update_needed():
+            obj = robinhood_summary.objects.all()
+            if not obj:
+                obj = robinhood_summary()
+            else:
+                obj = obj[0]
+            obj.buying_power    = float(profiles.load_account_profile()['buying_power'])
+            obj.portfolio_cash  = float(profiles.load_account_profile()['portfolio_cash'])
+            obj.save()
+
             # remove current entries
             robinhood_stocks.objects.all().delete()
             # get current owned securites and save to db
@@ -195,18 +223,14 @@ class RobinhoodWrapper():
                 if not quantity:
                     continue
                 # check if instrument is present in robinhood_instrument_symbol_lookup table
-                obj                   = robinhood_stocks()
-                obj.symbol, obj.name  = RobinhoodWrapper.get_symbol_from_instrument_url(item['instrument'])
-                obj.quantity          = quantity
-                obj.average_price     = float(item['average_buy_price'])
-                obj.latest_price      = float(r.get_latest_price(obj.symbol)[0])
-                obj.open_price        = float(r.get_fundamentals(obj.symbol)[0]['open'])
-                obj.equity            = obj.latest_price * obj.quantity
-                obj.cost_basis        = obj.average_price * obj.quantity
-                obj.unrealized_p_l    = obj.equity - obj.cost_basis
+                obj                     = robinhood_stocks()
+                obj.symbol, obj.name    = RobinhoodWrapper.get_symbol_from_instrument_url(item['instrument'])
+                obj.quantity            = quantity
+                obj.average_price       = float(item['average_buy_price'])
+                obj.latest_price        = float(r.get_latest_price(obj.symbol)[0])
+                obj.open_price          = float(r.get_fundamentals(obj.symbol)[0]['open'])
                 obj.save()
 
-        if RobinhoodWrapper.is_update_needed('options'):
             # remove current entries
             robinhood_options.objects.all().delete()
             # get current owned securites and save to db
@@ -215,85 +239,71 @@ class RobinhoodWrapper():
                 quantity = float(item['quantity'])
                 if not quantity:
                     continue
-                obj                      = robinhood_options()
-                obj.option_id            = item['option_id']
-                contract_into            = r.get_option_instrument_data_by_id(obj.option_id)
-                obj.strike_price         = float(contract_into['strike_price'])
-                obj.expiration_date      = contract_into['expiration_date']
-                obj.option_type          = contract_into['type']
-                obj.chain_symbol         = item['chain_symbol']
-                obj.average_price        = float(item['average_price']) / float(item['trade_value_multiplier'])
-                obj.quantity             = float(item['quantity'])
-                market_data              = r.get_option_market_data_by_id(obj.option_id)
-                obj.previous_close_price = float(market_data['previous_close_price'])
-                obj.current_price        = float(market_data['adjusted_mark_price'])
-                obj.equity               = obj.current_price * obj.quantity * float(item['trade_value_multiplier'])
-                obj.cost_basis           = obj.average_price * obj.quantity * float(item['trade_value_multiplier'])
-                obj.unrealized_p_l       = obj.equity - obj.cost_basis
+                obj                        = robinhood_options()
+                obj.option_id              = item['option_id']
+                contract_into              = r.get_option_instrument_data_by_id(obj.option_id)
+                obj.strike_price           = float(contract_into['strike_price'])
+                obj.expiration_date        = contract_into['expiration_date']
+                obj.option_type            = contract_into['type']
+                obj.chain_symbol           = item['chain_symbol']
+                obj.trade_value_multiplier = float(item['trade_value_multiplier'])
+                obj.average_price          = float(item['average_price']) / obj.trade_value_multiplier
+                obj.quantity               = float(item['quantity'])
+                market_data                = r.get_option_market_data_by_id(obj.option_id)
+                obj.previous_close_price   = float(market_data['previous_close_price'])
+                obj.current_price          = float(market_data['adjusted_mark_price'])
                 obj.save()
 
-        # remove current entries
-        robinhood_crypto.objects.all().delete()
-        # get current owned securites and save to db
-        crypto_position_data = r.get_crypto_positions()
-        for item in crypto_position_data:
-            quantity = float(item['quantity'])
-            if not quantity:
-                continue
-            obj                = robinhood_crypto()
-            obj.quantity       = quantity
-            obj.code           = item['currency']['code']
-            obj.current_price  = float(r.get_crypto_quote(obj.code)['mark_price'])
-            obj.average_price  = float(item['cost_bases'][0]['direct_cost_basis']) / obj.quantity
-            obj.equity         = obj.current_price * obj.quantity
-            obj.cost_basis     = obj.average_price * obj.quantity
-            obj.unrealized_p_l = obj.equity - obj.cost_basis
-            obj.save()
 
     @staticmethod
     def get_my_stock_positions():
         equity_total = 0
-        unrealized_p_l_total = 0
+        today_unrealized_pl = 0
+        total_unrealized_pl = 0
 
         qset = robinhood_stocks.objects.all()
         if not qset:
-            return equity_total, unrealized_p_l_total
+            return equity_total, today_unrealized_pl, total_unrealized_pl
 
         for item in qset:
-            equity_total = equity_total + item.equity
-            unrealized_p_l_total = unrealized_p_l_total + item.unrealized_p_l
+            # if item.symbol present robinhood_stock_split_events, update average from first robinhood_instrument_symbol_lookup
+            if robinhood_stock_split_events.objects.filter(new_symbol=item.symbol):
+                item.average_price = robinhood_instrument_symbol_lookup.objects.filter(symbol=item.symbol)[0].average_price
+            item.equity              = item.latest_price * item.quantity
+            item.cost_basis          = item.average_price * item.quantity
+            item.unrealized_pl       = item.equity - item.cost_basis
+            item.today_unrealized_pl = item.equity - (item.open_price * item.quantity)
+            item.save()
 
-        return equity_total, unrealized_p_l_total
+            equity_total             = equity_total + item.equity
+            total_unrealized_pl      = total_unrealized_pl + item.unrealized_pl
+            today_unrealized_pl      = today_unrealized_pl + item.today_unrealized_pl
+
+        return equity_total, today_unrealized_pl, total_unrealized_pl
 
     @staticmethod
     def get_my_options_positions():
         equity_total = 0
-        unrealized_p_l_total = 0
+        today_unrealized_pl = 0
+        total_unrealized_pl = 0
 
         qset = robinhood_options.objects.all()
         if not qset:
-            return equity_total, unrealized_p_l_total
+            return equity_total, today_unrealized_pl, total_unrealized_pl
 
         for item in qset:
-            equity_total = equity_total + item.equity
-            unrealized_p_l_total = unrealized_p_l_total + item.unrealized_p_l
+            item.equity               = item.current_price * item.quantity * item.trade_value_multiplier
+            item.cost_basis           = item.average_price * item.quantity * item.trade_value_multiplier
+            item.unrealized_pl        = item.equity - item.cost_basis
+            item.today_unrealized_pl  = item.equity - (item.previous_close_price * item.quantity) * item.trade_value_multiplier
+            print ('sym: %6s, exp: %12s, avg: %6.2f, num: %3d, equity: %7.2f, prev: %6.2f, current: %6.2f, total: %8.2f, today: %8.2f' % (item.chain_symbol, item.expiration_date, item.average_price, item.quantity, item.equity, item.previous_close_price, item.current_price, item.unrealized_pl, item.today_unrealized_pl))
+            item.save()
 
-        return equity_total, unrealized_p_l_total
+            equity_total               = equity_total + item.equity
+            total_unrealized_pl        = total_unrealized_pl + item.unrealized_pl
+            today_unrealized_pl        = today_unrealized_pl + item.today_unrealized_pl
 
-    @staticmethod
-    def get_my_crypto_positions():
-        equity_total = 0
-        unrealized_p_l_total = 0
-
-        qset = robinhood_crypto.objects.all()
-        if not qset:
-            return equity_total, unrealized_p_l_total
-
-        for item in qset:
-            equity_total = equity_total + item.equity
-            unrealized_p_l_total = unrealized_p_l_total + item.unrealized_p_l
-
-        return equity_total, unrealized_p_l_total
+        return equity_total, today_unrealized_pl, total_unrealized_pl
 
     @staticmethod
     def get_my_buying_power():
@@ -312,6 +322,14 @@ class RobinhoodWrapper():
             return obj[0].portfolio_cash
 
     @staticmethod
+    def get_realized_pl():
+        obj = robinhood_summary.objects.all()
+        if not obj:
+            return 0, 0
+        else:
+            return obj[0].today_realized_pl, obj[0].total_realized_pl
+
+    @staticmethod
     # using pyrh for get complete order history. following functions for that only
     def fetch_json_by_url(rb_client, url):
         return rb_client.session.get(url).json()
@@ -319,14 +337,22 @@ class RobinhoodWrapper():
     @staticmethod
     def get_all_history_orders(rb_client):
         orders = []
-        past_orders = rb_client.order_history()
+        history_urls = robinhood_stock_order_history_next_urls.objects.all().order_by('-id')
+        if not history_urls:
+            past_orders = rb_client.order_history()
+        else:
+            history_urls = history_urls[0]
+            past_orders = RobinhoodWrapper.fetch_json_by_url(rb_client, history_urls.next_url)
         orders.extend(past_orders["results"])
-        while past_orders["next"]:
-            print("{} order fetched".format(len(orders)))
-            next_url = past_orders["next"]
-            past_orders = RobinhoodWrapper.fetch_json_by_url(rb_client, next_url)
-            orders.extend(past_orders["results"])
         print("{} order fetched".format(len(orders)))
+        while past_orders["next"]:
+            next_url = past_orders["next"]
+            history_urls = robinhood_stock_order_history_next_urls()
+            history_urls.next_url = next_url
+            history_urls.save()
+            past_orders = RobinhoodWrapper.fetch_json_by_url(rb_client, next_url)
+            print("{} order fetched".format(len(orders)))
+            orders.extend(past_orders["results"])
         return orders
 
     @staticmethod
@@ -355,3 +381,110 @@ class RobinhoodWrapper():
                 break
 
         print ('orders_saved_to_db: ' + str(orders_saved_to_db))
+
+    @staticmethod
+    def calculate_pl():
+        # in following dict, key is symbol and value is another dict with quantity/avg_price/equity/realized_pl as keys of nested dict
+        stocks = {}
+
+        # for realized_pl today/total
+        summary = robinhood_summary.objects.all()[0]
+
+        orders = robinhood_stock_order_history.objects.filter(processed=False).order_by('timestamp')
+        # parse complete robinhood_stock_order_history.
+        # TODO: only parse, un-parsed transactions
+        # and calcaulate, avg, quantity, equity, realized_pl at end of each transaction
+        for order in orders:
+            sell_order_exception = False
+            prev_ticker = ''
+            # if symbol in stock_split:
+            split_event = robinhood_stock_split_events.objects.filter(new_symbol=order.symbol)
+            if split_event and split_event[0].processed == False:
+                split_event = split_event[0]
+                if order.timestamp.date() > split_event.date:
+                    split_event.processed = True
+                    split_event.save()
+                    if split_event.ratio != 0:
+                        # update previous stock avg and quantity
+                        stocks[order.symbol]['total_quantity'] = stocks[order.symbol]['total_quantity'] * split_event.ratio
+                        stocks[order.symbol]['average_price']  = stocks[order.symbol]['average_price'] / split_event.ratio
+                    else:
+                        sell_order_exception = True
+                        prev_ticker = split_event.symbol
+                        print ('adding exception for old_ticker: ' + split_event.symbol + ' new_ticker: ' + order.symbol)
+            if order.order_type == 'buy':
+                if order.symbol not in stocks:
+                    stocks[order.symbol] = {}
+                    stocks[order.symbol]['total_quantity']          = order.shares
+                    stocks[order.symbol]['average_price']           = order.price
+                    stocks[order.symbol]['total_equity']            = order.shares * order.price
+                    stocks[order.symbol]['order_realized_pl']       = 0
+                    stocks[order.symbol]['total_realized_pl']       = 0
+                    stocks[order.symbol]['today_realized_pl']       = 0
+                else:
+                    stocks[order.symbol]['total_quantity']          = stocks[order.symbol]['total_quantity'] + order.shares
+                    stocks[order.symbol]['total_equity']            = stocks[order.symbol]['total_equity'] + order.shares * order.price
+                    stocks[order.symbol]['average_price']           = stocks[order.symbol]['total_equity'] / stocks[order.symbol]['total_quantity']
+                    # no change in total_realized_pl/today_realized_pl, but realized_pl = 0 since this was buy order
+                    stocks[order.symbol]['order_realized_pl']       = 0
+            else:
+                # order was sell
+                if order.symbol not in stocks:
+                    if sell_order_exception is True:
+                        stocks[order.symbol] = {}
+                        stocks[order.symbol]['total_equity']      = 0
+                        stocks[order.symbol]['total_quantity']    = 0
+                        stocks[order.symbol]['today_realized_pl'] = 0
+                        stocks[order.symbol]['total_realized_pl'] = 0
+                        stocks[order.symbol]['average_price']     = stocks[prev_ticker]['total_equity']/order.shares
+                        stocks[order.symbol]['order_realized_pl'] = (order.price * order.shares) - stocks[prev_ticker]['total_equity']
+                        # delete prev ticker entry for dic
+                        print ('deleting prev ticker: ' + prev_ticker)
+                        stocks.pop(prev_ticker, None)
+                    else:
+                        # fatal error
+                        print (order.symbol + ': sell without buy, check order history')
+                        continue
+                else:
+                    stocks[order.symbol]['total_quantity'] = stocks[order.symbol]['total_quantity'] - order.shares
+                    stocks[order.symbol]['total_equity']   = stocks[order.symbol]['total_quantity'] * stocks[order.symbol]['average_price']
+                    # realized_pl is only the profit/loss in this order
+                    stocks[order.symbol]['order_realized_pl'] = (order.price - stocks[order.symbol]['average_price']) * order.shares
+
+
+                stocks[order.symbol]['total_realized_pl']    = stocks[order.symbol]['total_realized_pl'] + stocks[order.symbol]['order_realized_pl']
+                if order.timestamp.date() == timezone.now().date():
+                    # order was sell and date was today
+                    stocks[order.symbol]['today_realized_pl'] = stocks[order.symbol]['today_realized_pl'] + stocks[order.symbol]['order_realized_pl']
+
+            stocks[order.symbol]['last_trade_ts'] = order.timestamp
+            # update the same values in the transaction table
+            order.average_price       = stocks[order.symbol]['average_price']
+            order.total_equity        = stocks[order.symbol]['total_equity']
+            order.total_quantity      = stocks[order.symbol]['total_quantity']
+            order.order_realized_pl   = stocks[order.symbol]['order_realized_pl']
+            order.total_realized_pl   = stocks[order.symbol]['total_realized_pl']
+            order.processed           = True
+            order.save()
+
+            summary.total_realized_pl = summary.total_realized_pl + stocks[order.symbol]['order_realized_pl']
+            summary.today_realized_pl = summary.today_realized_pl + stocks[order.symbol]['today_realized_pl']
+            summary.save()
+        print ('today_realized_pl: %9.2f, total_realized_pl: %9.2f' % (summary.today_realized_pl, summary.total_realized_pl))
+
+        # parse disctionary created
+        # update same fields in robinhood_instrument_symbol_lookup
+        for symbol in stocks.keys():
+            obj = robinhood_instrument_symbol_lookup.objects.filter(symbol=symbol)
+            if not obj:
+                # fatal error
+                print (symbol + ' not present in lookup table..')
+            else:
+                obj = obj[0]
+                obj.average_price     = stocks[symbol]['average_price']
+                obj.quantity          = stocks[symbol]['total_quantity']
+                obj.equity            = stocks[symbol]['total_equity']
+                obj.total_realized_pl = stocks[symbol]['total_realized_pl']
+                obj.today_realized_pl = stocks[symbol]['today_realized_pl']
+                obj.last_trade_ts     = stocks[symbol]['last_trade_ts']
+                obj.save()

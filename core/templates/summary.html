@@ -15,31 +15,32 @@
   <div class="content-wrapper">
     <div class="row">
       <div class="col grid-margin">
-        <input type="submit" value="Get Order History" name='get_order_history'>
-      </div>
-      <div class="col grid-margin">
         <input type="submit" value="Get Profile Data" name='get_profile_data'>
-      </div>
-      <div class="col grid-margin">
-        <input type="submit" value="Calculate Today's PL" name='calculate_today_pl'>
       </div>
     </div>
     <div class="row">
-      <div class="col grid-margin">
+      <div class="col grid-margin stretch-card">
         <div class="card">
           <div class="card-body">
             <div class="row">
               <div class="col-9">
                 <div class="d-flex align-items-center align-self-start">
-                  <div class="col-sm-9">
-                    <h4 class="mb-0">$ {{options_equity | floatformat:2}}</h4>
+                  <div class="col-sm-6">
+                    <h4 class="mb-0" style="font-family:courier;">$ {{options_equity | floatformat:2}}</h4>
                   </div>
                   <div class="col-sm-9">
                     <div class="row">
-                      {% if options_unrealized_p_l_total < 0 %}
-                        <p class="text-danger ml-2 mb-0 font-weight-medium">$ {{options_unrealized_p_l_total | floatformat:2}}</p>
+                      {% if total_options_unrealized_pl < 0 %}
+                        <p class="text-danger ml-0 mb-0 font-weight-small" style="font-family:courier;">total unrealized_pl: $ {{total_options_unrealized_pl | floatformat:2}}</p>
                       {% else %}
-                        <p class="text-success ml-2 mb-0 font-weight-medium">$ {{options_unrealized_p_l_total | floatformat:2}}</p>
+                        <p class="text-success ml-0 mb-0 font-weight-small" style="font-family:courier;">total unrealized_pl: $ {{total_options_unrealized_pl | floatformat:2}}</p>
+                      {% endif %}
+                    </div>
+                    <div class="row">
+                      {% if today_options_unrealized_pl < 0 %}
+                        <p class="text-danger ml-0 mb-0 font-weight-small" style="font-family:courier;">today unrealized_pl: $ {{today_options_unrealized_pl | floatformat:2}}</p>
+                      {% else %}
+                        <p class="text-success ml-0 mb-0 font-weight-small" style="font-family:courier;">today unrealized_pl: $ {{today_options_unrealized_pl | floatformat:2}}</p>
                       {% endif %}
                     </div>
                   </div>
@@ -50,21 +51,35 @@
           </div>
         </div>
       </div>
-      <div class="col grid-margin">
+      <div class="col grid-margin stretch-card">
         <div class="card">
           <div class="card-body">
             <div class="row">
               <div class="col-9">
                 <div class="d-flex align-items-center align-self-start">
-                  <div class="col-sm-9">
-                    <h4 class="mb-0">$ {{stocks_equity | floatformat:2}}</h4>
+                  <div class="col-sm-6">
+                    <h4 class="mb-0" style="font-family:courier;">$ {{stocks_equity | floatformat:2}}</h4>
                   </div>
                   <div class="col-sm-9">
                     <div class="row">
-                      {% if stocks_unrealized_p_l_total < 0 %}
-                        <p class="text-danger ml-2 mb-0 font-weight-medium">$ {{stocks_unrealized_p_l_total | floatformat:2}}</p>
+                      {% if total_stocks_unrealized_pl < 0 %}
+                        <p class="text-danger ml-0 mb-0 font-weight-small" style="font-family:courier;">total unrealized_pl: $ {{total_stocks_unrealized_pl | floatformat:2}}</p>
                       {% else %}
-                        <p class="text-success ml-2 mb-0 font-weight-medium">$ {{stocks_unrealized_p_l_total | floatformat:2}}</p>
+                        <p class="text-success ml-0 mb-0 font-weight-small" style="font-family:courier;">total unrealized_pl: $ {{total_stocks_unrealized_pl | floatformat:2}}</p>
+                      {% endif %}
+                    </div>
+                    <div class="row">
+                      {% if today_stocks_unrealized_pl < 0 %}
+                        <p class="text-danger ml-0 mb-0 font-weight-small" style="font-family:courier;">today unrealized_pl: $ {{today_stocks_unrealized_pl | floatformat:2}}</p>
+                      {% else %}
+                        <p class="text-success ml-0 mb-0 font-weight-small" style="font-family:courier;">today unrealized_pl: $ {{today_stocks_unrealized_pl | floatformat:2}}</p>
+                      {% endif %}
+                    </div>
+                    <div class="row">
+                      {% if today_stocks_realized_pl < 0 %}
+                        <p class="text-danger ml-0 mb-0 font-weight-small" style="font-family:courier;">today __realized_pl: $ {{today_stocks_realized_pl | floatformat:2}}</p>
+                      {% else %}
+                        <p class="text-success ml-0 mb-0 font-weight-small" style="font-family:courier;">today __realized_pl: $ {{today_stocks_realized_pl | floatformat:2}}</p>
                       {% endif %}
                     </div>
                   </div>
@@ -75,56 +90,25 @@
           </div>
         </div>
       </div>
-      <div class="col grid-margin">
+      <div class="col grid-margin stretch-card">
         <div class="card">
           <div class="card-body">
             <div class="row">
-              <div class="col-9">
+              <div class="col">
                 <div class="d-flex align-items-center align-self-start">
                   <div class="col-sm-9">
-                    <h4 class="mb-0">$ {{crypto_equity | floatformat:2}}</h4>
-                  </div>
-                  <div class="col-sm-9">
-                    <div class="row">
-                      {% if crypto_unrealized_p_l_total < 0 %}
-                        <p class="text-danger ml-2 mb-0 font-weight-medium">$ {{crypto_unrealized_p_l_total | floatformat:2}}</p>
-                      {% else %}
-                        <p class="text-success ml-2 mb-0 font-weight-medium">$ {{crypto_unrealized_p_l_total | floatformat:2}}</p>
-                      {% endif %}
-                    </div>
+                    <h4 class="mb-0" style="font-family:courier;">$ {{margin_or_cash | floatformat:2}}</h4>
                   </div>
                 </div>
+                <h6 class="text-muted font-weight-normal">Margin used/Cash</h6>
               </div>
-            </div>
-            <h6 class="text-muted font-weight-normal">Crypto</h6>
-          </div>
-        </div>
-      </div>
-      <div class="col grid-margin">
-        <div class="card">
-          <div class="card-body">
-            <div class="row">
-              <div class="col-9">
+              <div class="col">
                 <div class="d-flex align-items-center align-self-start">
-                  <h4 class="mb-0">$ {{margin_or_cash | floatformat:2}}</h4>
+                  <h4 class="mb-0" style="font-family:courier;">$ {{portfolio_value | floatformat:2}}</h4>
                 </div>
+                <h6 class="text-muted font-weight-normal">Portfolio Value</h6>
               </div>
             </div>
-            <h6 class="text-muted font-weight-normal">Margin used/Cash</h6>
-          </div>
-        </div>
-      </div>
-      <div class="col grid-margin">
-        <div class="card">
-          <div class="card-body">
-            <div class="row">
-              <div class="col-9">
-                <div class="d-flex align-items-center align-self-start">
-                  <h4 class="mb-0">$ {{portfolio_value | floatformat:2}}</h4>
-                </div>
-              </div>
-            </div>
-            <h6 class="text-muted font-weight-normal">Portfolio Value</h6>
           </div>
         </div>
       </div>
