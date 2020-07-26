@@ -39,7 +39,7 @@ PRO versions include **Premium UI Kits**, Lifetime updates and **24/7 LIVE Suppo
 
 ```bash
 $ # Get the code
-$ git clone https://github.com/app-generator/django-dashboard-corona-dark.git
+$ git clone https://github.com/ArrrNeo/django-dashboard-corona-dark.git
 $ cd django-dashboard-corona-dark
 $
 $ # Virtualenv modules installation (Unix based systems)
@@ -53,9 +53,17 @@ $
 $ # Install modules - SQLite Storage
 $ pip3 install -r requirements.txt
 $
+$ # patch pyrh library. this is one of the robinhood access library patched to avoid asking for SMS everytime
+$ ./patch_pyrh_lib.sh
+$
 $ # Create tables
 $ python manage.py makemigrations
 $ python manage.py migrate
+$
+$ # if you want to reset database you can later run
+$ ./reset-db.sh
+$
+$ # create username.txt and password.txt files inside app folder. these files will not be uploaded to git and are gitignored
 $
 $ # Start the application (development mode)
 $ python manage.py runserver # default port 8000
