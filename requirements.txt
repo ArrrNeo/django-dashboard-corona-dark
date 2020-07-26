@@ -11,3 +11,4 @@ gunicorn
 whitenoise
 django-tables2
 pyrh
+robin_stocks
