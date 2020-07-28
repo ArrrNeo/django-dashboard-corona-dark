@@ -33,6 +33,7 @@
                     <th> cost_basis </th>
                     <th> unrealized_pl </th>
                     <th> today_unrealized_pl </th>
+                    <th> portfolio_diversity </th>
                     <th> long_term </th>
                   </tr>
                 </thead>
@@ -51,6 +52,7 @@
                       <td> {{ row.cost_basis | floatformat:2 }} </td>
                       <td> {{ row.unrealized_pl | floatformat:2 }} </td>
                       <td> {{ row.today_unrealized_pl | floatformat:2 }} </td>
+                      <td> {{ row.portfolio_diversity | floatformat:2 }} </td>
                       <td> <input type="checkbox" name="long_term" value={{ row.option_id }} {% if row.long_term %} checked {% endif %} /> </td>
                     </tr>
                   {% endfor %}

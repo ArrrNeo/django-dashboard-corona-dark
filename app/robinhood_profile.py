@@ -307,6 +307,26 @@ class RobinhoodWrapper():
         return equity_total, today_unrealized_pl, total_unrealized_pl
 
     @staticmethod
+    def calculate_portfolio_diversity(total_equity):
+        qset = robinhood_stocks.objects.all()
+        if not qset:
+            return
+
+        for item in qset:
+            item.portfolio_diversity = (item.equity / total_equity) * 100
+            print ('symbol: %7s, equity: %7.2f, total_equity: %7.2f, portfolio_diversity: %7.2f' % (item.symbol, item.equity, total_equity, item.portfolio_diversity))
+            item.save()
+
+        qset = robinhood_options.objects.all()
+        if not qset:
+            return
+
+        for item in qset:
+            item.portfolio_diversity = (item.equity / total_equity) * 100
+            print ('symbol: %7s, equity: %7.2f, total_equity: %7.2f, portfolio_diversity: %7.2f' % (item.chain_symbol, item.equity, total_equity, item.portfolio_diversity))
+            item.save()
+
+    @staticmethod
     def get_my_buying_power():
         obj = robinhood_summary.objects.all()
         if not obj:

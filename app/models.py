@@ -29,6 +29,7 @@ class robinhood_stocks(models.Model):
     unrealized_pl           = models.FloatField(default=0)
     long_term               = models.BooleanField(default=False)
     today_unrealized_pl     = models.FloatField(default=0)
+    portfolio_diversity     = models.FloatField(default=0)
 
 # table for options being held
 class robinhood_options(models.Model):
@@ -47,6 +48,7 @@ class robinhood_options(models.Model):
     unrealized_pl           = models.FloatField(default=0)
     long_term               = models.BooleanField(default=False)
     today_unrealized_pl     = models.FloatField(default=0)
+    portfolio_diversity     = models.FloatField(default=0)
 
 class robinhood_instrument_symbol_lookup(models.Model):
     symbol                 = models.CharField(max_length=5)
