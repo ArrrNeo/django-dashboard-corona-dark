@@ -29,3 +29,5 @@ username.txt
 password.txt
 
 app/migrations/0*.py
+app/scratchpad/*
+db.sqlite3.sqbpro

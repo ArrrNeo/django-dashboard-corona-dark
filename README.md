@@ -1,39 +1,15 @@
-# [Django Dashboard Corona Dark](https://appseed.us/admin-dashboards/django-dashboard-corona-dark)
+This project started as a way to give me better interface for robinhood I had few features in my mind like:
+1) options vs shares vs cash allocation.
+2) include gold/silver and derative ETFs in cash
+3) give me pie chart of allocation for various tickers in my portfolio.
+4) historical data of daily/weekly/monthly profit loss
+5) and many more.
 
-> **Open-Source Admin Dashboard** coded in **Django Framework** by **AppSeed** [Web App Generator](https://appseed.us/app-generator) - Features:
+However apart from displaying current portfolio, other features like calculating historic profit loss is been tough and I am working on it less frequently right now. Other than robinhood integration I also started working on side tool (and possible more to come) debit spread chart. This basically gives me for a given stock and date what debit spread would yeild what max profit. So I have changed default page to point to debit spread chart.
 
-- Sample UI Kit: **Corona Dark Dashboard** (Free Version) provided by **Bootstrapdash**
-- UI-Ready app, SQLite Database, Django Native ORM
-- Modular design, clean code-base
-- Session-Based Authentication, Forms validation
-- Deployment scripts: Docker, Gunicorn / Nginx
-- **MIT License**
-- Free support via **Github** issues tracker
-- Paid 24/7 Live Support via [Discord](https://discord.gg/fZC6hup).
+![Image Debit Spread Chart](./media/debit_spread.png)
 
-> Links
-
-- [Django Dashboard Corona Dark](https://django-dashboard-corona-dark.appseed.us/) - LIVE Demo
-- [Django Dashboard Corona Dark](https://appseed.us/admin-dashboards/django-dashboard-corona-dark) - Official product page
-- More [Django Admin Dashboards](https://appseed.us/admin-dashboards/django) - index hosted by **[AppSeed](https://appseed.us)**
-- [Open-Source Admin Dashboards](https://appseed.us/admin-dashboards/open-source) - index hosted by **[AppSeed](https://appseed.us)**
-
-<br />
-
-## Want more? Go PRO!
-
-PRO versions include **Premium UI Kits**, Lifetime updates and **24/7 LIVE Support** (via [Discord](https://discord.gg/fZC6hup))
-
-| [Django Dashboard Material PRO](https://appseed.us/admin-dashboards/django-dashboard-material-pro) | [Django Dashboard Black PRO](https://appseed.us/admin-dashboards/django-dashboard-black-pro) | [Django Dashboard Argon PRO](https://appseed.us/admin-dashboards/django-dashboard-argon-pro) |
-| --- | --- | --- |
-| [![Django Dashboard Material PRO](https://raw.githubusercontent.com/app-generator/django-dashboard-material-pro/master/media/django-dashboard-material-pro-screen.png)](https://appseed.us/admin-dashboards/django-dashboard-material-pro) | [![Django Dashboard Black PRO](https://raw.githubusercontent.com/app-generator/django-dashboard-black-pro/master/media/django-dashboard-black-pro-screen.png)](https://appseed.us/admin-dashboards/django-dashboard-black-pro) | [![Django Dashboard Argon PRO](https://raw.githubusercontent.com/app-generator/django-dashboard-argon-pro/master/media/django-dashboard-argon-pro-screen.png)](https://appseed.us/admin-dashboards/django-dashboard-argon-pro)
-
-<br />
-<br />
-
-![Django Dashboard Corona Dark - Open-Source template project provided by AppSeed.](https://raw.githubusercontent.com/app-generator/django-dashboard-corona-dark/master/media/django-dashboard-corona-dark-screen.png)
-
-<br />
+Anyways here is rest of the readme. This project was cloned from https://github.com/app-generator/django-dashboard-corona-dark but then I changed the remote url to point to my empty repo, that is why I now have lost fork connection. The reason I did this was because initially I was not careful about checking in robinhood credentials and accidently uploaded to github once and twice. I need to make the repo private which was not allowed for a forked repo. Since then I have fixed robinhood credential reading mechanism so that I dont accidently check it in.
 
 ## How to use it
 
@@ -63,8 +39,10 @@ $
 $ # if you want to reset database you can later run
 $ ./reset-db.sh
 $
-$ # create username.txt and password.txt files inside app folder. these files will not be uploaded to git and are gitignored
-$
+$ # create username.txt and password.txt files inside app folder.
+$ # these files will not be uploaded to git and are gitignored
+$ # if you dont want to use portfolio feature yet, no need for above step
+
 $ # Start the application (development mode)
 $ python manage.py runserver # default port 8000
 $
@@ -74,152 +52,9 @@ $
 $ # Access the web app in browser: http://127.0.0.1:8000/
 ```
 
-> Note: To use the app, please access the registration page and create a new user. After authentication, the app will unlock the private pages.
-
-<br />
-
-## Code-base structure
-
-The project is coded using a simple and intuitive structure presented bellow:
-
-```bash
-< PROJECT ROOT >
-   |
-   |-- core/                               # Implements app logic and serve the static assets
-   |    |-- settings.py                    # Django app bootstrapper
-   |    |-- wsgi.py                        # Start the app in production
-   |    |-- urls.py                        # Define URLs served by all apps/nodes
-   |    |
-   |    |-- static/
-   |    |    |-- <css, JS, images>         # CSS files, Javascripts files
-   |    |
-   |    |-- templates/                     # Templates used to render pages
-   |         |
-   |         |-- includes/                 # HTML chunks and components
-   |         |    |-- navigation.html      # Top menu component
-   |         |    |-- sidebar.html         # Sidebar component
-   |         |    |-- footer.html          # App Footer
-   |         |    |-- scripts.html         # Scripts common to all pages
-   |         |
-   |         |-- layouts/                  # Master pages
-   |         |    |-- base-fullscreen.html # Used by Authentication pages
-   |         |    |-- base.html            # Used by common pages
-   |         |
-   |         |-- accounts/                 # Authentication pages
-   |         |    |-- login.html           # Login page
-   |         |    |-- register.html        # Register page
-   |         |
-   |      index.html                       # The default page
-   |     page-404.html                     # Error 404 page
-   |     page-500.html                     # Error 404 page
-   |       *.html                          # All other HTML pages
-   |
-   |-- authentication/                     # Handles auth routes (login and register)
-   |    |
-   |    |-- urls.py                        # Define authentication routes  
-   |    |-- views.py                       # Handles login and registration  
-   |    |-- forms.py                       # Define auth forms  
-   |
-   |-- app/                                # A simple app that serve HTML files
-   |    |
-   |    |-- views.py                       # Serve HTML pages for authenticated users
-   |    |-- urls.py                        # Define some super simple routes  
-   |
-   |-- requirements.txt                    # Development modules - SQLite storage
-   |
-   |-- .env                                # Inject Configuration via Environment
-   |-- manage.py                           # Start the app - Django default start script
-   |
-   |-- ************************************************************************
-```
-
-<br />
-
-> The bootstrap flow
-
-- Django bootstrapper `manage.py` uses `core/settings.py` as the main configuration file
-- `core/settings.py` loads the app magic from `.env` file
-- Redirect the guest users to Login page
-- Unlock the pages served by *app* node for authenticated users
-
-<br />
-
-## Deployment
-
-The app is provided with a basic configuration to be executed in [Docker](https://www.docker.com/), [Gunicorn](https://gunicorn.org/), and [Waitress](https://docs.pylonsproject.org/projects/waitress/en/stable/).
-
-### [Docker](https://www.docker.com/) execution
----
-
-The application can be easily executed in a docker container. The steps:
-
-> Get the code
-
-```bash
-$ git clone https://github.com/app-generator/django-dashboard-corona-dark.git
-$ cd django-dashboard-corona-dark
-```
-
-> Start the app in Docker
-
-```bash
-$ sudo docker-compose pull && sudo docker-compose build && sudo docker-compose up -d
-```
-
-Visit `http://localhost:5005` in your browser. The app should be up & running.
-
-<br />
-
-### [Gunicorn](https://gunicorn.org/)
----
-
-Gunicorn 'Green Unicorn' is a Python WSGI HTTP Server for UNIX.
-
-> Install using pip
-
-```bash
-$ pip install gunicorn
-```
-> Start the app using gunicorn binary
-
-```bash
-$ gunicorn --bind=0.0.0.0:8001 core.wsgi:application
-Serving on http://localhost:8001
-```
-
-Visit `http://localhost:8001` in your browser. The app should be up & running.
-
-
-<br />
-
-### [Waitress](https://docs.pylonsproject.org/projects/waitress/en/stable/)
----
-
-Waitress (Gunicorn equivalent for Windows) is meant to be a production-quality pure-Python WSGI server with very acceptable performance. It has no dependencies except ones that live in the Python standard library.
-
-> Install using pip
-
-```bash
-$ pip install waitress
-```
-> Start the app using [waitress-serve](https://docs.pylonsproject.org/projects/waitress/en/stable/runner.html)
-
-```bash
-$ waitress-serve --port=8001 core.wsgi:application
-Serving on http://localhost:8001
-```
-
-Visit `http://localhost:8001` in your browser. The app should be up & running.
-
-<br />
-
 ## Credits & Links
 
 - [Django](https://www.djangoproject.com/) - The offcial website
-- [Boilerplate Code](https://appseed.us/boilerplate-code) - Index provided by **AppSeed**
-- [Boilerplate Code](https://github.com/app-generator/boilerplate-code) - Index published on Github
+- [Original repo](https://github.com/app-generator/django-dashboard-corona-dark) - App Generator
 
 <br />
-
----
-[Django Dashboard Corona Dark](https://appseed.us/admin-dashboards/django-dashboard-corona-dark) - Provided by **AppSeed** [Web App Generator](https://appseed.us/app-generator).

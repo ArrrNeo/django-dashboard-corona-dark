@@ -1,0 +1,143 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+{% block title %} Summary {% endblock %}
+<!-- Specific Plugin CSS goes HERE -->
+{% block plugin_stylesheets %}{% endblock plugin_stylesheets %}
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %}
+{% block content %}
+
+<form action="/debit_spread_chart/" method="POST">
+  <label for="ticker">ticker: </label>
+  <input id="ticker" type="text" name="ticker" value="{{ ticker }}">
+  <label for="date">date: </label>
+  <input id="date" type="date" name="date" value="{{ date }}">
+  <label for="num_strikes">num_strikes: </label>
+  <input id="num_strikes" type="text" name="num_strikes" value="{{ num_strikes }}">
+  <label for="min_profit_pc">min_profit_pc: </label>
+  <input id="min_profit_pc" type="text" name="min_profit_pc" value="{{ min_profit_pc }}">
+  <label for="log_scale">log_scale: </label>
+  <input id="log_scale" type="checkbox" name="log_scale" {% if log_scale %} checked{% endif %}>
+  <input type="submit" value="submit" name='submit'>
+  {% csrf_token %}
+  <!-- {{ form }} -->
+  <div class="content-wrapper">
+    <h4">ticker: {{ticker}}</h4>
+    <br/>
+    <h4">Exp: {{date}}</h4>
+    <br/>
+    <h4">Number for Strikes: {{num_strikes}}</h4>
+    <br/>
+    <h4">Current Price: $ {{curr_price}}</h4>
+    <div class="row stretch-card">
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Line chart</h4>
+          <div id="chartContainer" style="height: 500px; width: 100%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% endblock content %}
+{% block plugin_javascripts %}
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+{% endblock plugin_javascripts %}
+{% block javascripts %}
+<script>
+  var scatter_data =
+  [{
+    type: "scatter",
+    toolTipContent: "premium: $ {a}<br/>short_strike: $ {b}<br/>max_profit: $ {c}<br/>max_profit %: {y}<br/>itm %: {d}",
+    dataPoints: []
+  },
+  {
+    type: "line",
+    indexLabelFontSize: 16,
+    dataPoints: []
+  }];
+
+  function itm_color(itm_pc) {
+    // following is the color scheme
+    // c4fcc5 0 to 1      fac8c6    0 to -1
+    // 95fa98 1 to 2      f69c99   -1 to -2
+    // 37f63d 2 to 3      f3706b   -2 to -3
+    // 07c40d 3 to 4      ef443e   -3 to -4
+    // 06950a 4 to 5      ea1a12   -4 to -5
+    // 046507 5 +         bc150f   -5 -
+    var colors = [
+      "#bc150f",
+      "#ea1a12",
+      "#ef443e",
+      "#f3706b",
+      "#f69c99",
+      "#fac8c6",
+      "#c4fcc5",
+      "#95fa98",
+      "#37f63d",
+      "#07c40d",
+      "#06950a",
+      "#046507",
+    ];
+    itm_pc = Math.floor(itm_pc + 6);
+    if (itm_pc < 0) {
+      itm_pc = 0;
+    }
+    if (itm_pc > 11) {
+      itm_pc = 11;
+    }
+    return colors[itm_pc];
+  }
+
+  window.onload = function () {
+    var curr_price = {{curr_price | safe}};
+    var premium = {{premium | safe}};
+    var max_profit = {{max_profit | safe}};
+    var max_profit_pc = {{max_profit_pc | safe}};
+    var long_strike = {{long_strike | safe}};
+    var short_strike = {{short_strike | safe}};
+    var itm_percent = {{itm_percent | safe}};
+    var x_axis_label = "{{x_axis_chart_2}}";
+    var y_axis_label = "{{y_axis_chart_2}}";
+    {% if log_scale %}
+      var logScale = true;
+    {% else %}
+      var logScale = false;
+    {% endif %}
+    var chart2 = new CanvasJS.Chart("chartContainer",
+                                    {
+                                      animationEnabled : false,
+                                      theme            : "light2",
+                                      axisX            : [{title: x_axis_label}],
+                                      axisY            : [{logarithmic: logScale, title: y_axis_label}],
+                                      title            : {text: "Debit Spread vs Max Profit %"},
+                                      data             : scatter_data
+                                    }
+                                   );
+    var index;
+    var min = max_profit_pc[0];
+    var max = max_profit_pc[0];
+    for (index = 0; index < premium.length; ++index) {
+      chart2.options.data[0].dataPoints.push({
+                                                color : itm_color(itm_percent[index]),
+                                                x     : long_strike[index],
+                                                y     : max_profit_pc[index],
+                                                a     : premium[index],
+                                                b     : short_strike[index],
+                                                c     : max_profit[index],
+                                                d     : itm_percent[index]
+                                              });
+      if (max_profit_pc[index] <= min) {
+        min = max_profit_pc[index];
+      }
+      if (max_profit_pc[index] >= max) {
+        max = max_profit_pc[index];
+      }
+    }
+    chart2.options.data[1].dataPoints.push({ x: curr_price, y: min});
+    chart2.options.data[1].dataPoints.push({ x: curr_price, y: max});
+    chart2.render();
+  }
+</script>
+{% endblock javascripts %}

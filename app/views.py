@@ -161,34 +161,35 @@ def stocks(request):
     ctx['table'] = list(qset)
     return render(request, 'stocks.html', ctx)
 
-def options_chart(request):
+def debit_spread_chart(request):
     ctx = {}
     ticker = 'ROKU'
-    option_date = (StockUtils.getOptionsDate(ticker)[0])
     num_strikes = 10
+    calculations = []
+    min_profit_pc = 5
+    log_scale = False
+    option_date = (StockUtils.getOptionsDate(ticker)[0])
 
     if request.method == 'POST':
         ticker = request.POST.get('ticker')
         option_date = str(request.POST.get('date'))
         num_strikes = int(request.POST.get('num_strikes'))
+        log_scale = bool(request.POST.get('log_scale'))
+        min_profit_pc = int(request.POST.get('min_profit_pc'))
 
     ctx['ticker'] = ticker
     ctx['date'] = option_date
+    ctx['log_scale'] = log_scale
     ctx['num_strikes'] = num_strikes
+    ctx['min_profit_pc'] = min_profit_pc
 
     info = StockUtils.getStockInfo(ticker)
     curr_price = (info['bid'] + info['ask'])/2
-    data = StockUtils.getOptions(ticker, option_date)
-    data = nsmallest(num_strikes, data, key=lambda x: abs(x['strike'] - curr_price))
-    data = sorted(data, key=lambda k: k['strike']) 
-    ctx['y'] = [x['ask'] for x in data]
-    ctx['x'] = [x['strike'] for x in data]
-    ctx['x_axis_chart_1'] = 'strike_price'
-    ctx['y_axis_chart_1'] = 'premium'
-
     ctx['curr_price'] = curr_price
 
-    calculations = []
+    data = StockUtils.getOptions(ticker, option_date)
+    data = nsmallest(num_strikes, data, key=lambda x: abs(x['strike'] - curr_price))
+    data = sorted(data, key=lambda k: k['strike'])
     for i in range(0, len(data)):
         for j in range(i+1, len(data)):
             entry = {}
@@ -196,10 +197,13 @@ def options_chart(request):
             entry['max_profit'] = (data[j]['strike'] - data[i]['strike']) - entry['premium']
             entry['long_strike'] = data[i]['strike']
             entry['short_strike'] = data[j]['strike']
-            entry['trade'] = 'buy: ' + str(entry['long_strike']) + 'c, sell: ' + str(entry['short_strike']) + 'c'
+            # entry['trade'] = 'buy: ' + str(entry['long_strike']) + 'c, sell: ' + str(entry['short_strike']) + 'c'
             if entry['premium'] == 0:
                 continue
+            entry['itm_percent'] = ((ctx['curr_price'] - (entry['long_strike'] + entry['premium'])) / ctx['curr_price']) * 100
             entry['max_profit_pc'] = (entry['max_profit'] / entry['premium']) * 100
+            if entry['max_profit_pc'] <= min_profit_pc:
+                continue
             calculations.append(entry)
     calculations = sorted(calculations, key=lambda k: k['max_profit_pc'])
 
@@ -208,9 +212,10 @@ def options_chart(request):
     ctx['max_profit_pc'] = [x['max_profit_pc'] for x in calculations]
     ctx['long_strike'] = [x['long_strike'] for x in calculations]
     ctx['short_strike'] = [x['short_strike'] for x in calculations]
+    ctx['itm_percent'] = [x['itm_percent'] for x in calculations]
     ctx['x_axis_chart_2'] = 'long_strike'
     ctx['y_axis_chart_2'] = 'max_profit_percent'
     # for entry in calculations:
     #     print ('trade: %s, premium: %7.2f, max_profit: %7.2f, max_profit_pc: %7.2f' % (entry['trade'], entry['premium'], entry['max_profit'], entry['max_profit_pc']))
 
-    return render(request, 'options_chart.html', ctx)
+    return render(request, 'debit_spread_chart.html', ctx)
